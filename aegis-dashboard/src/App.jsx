@@ -24,12 +24,12 @@ function App() {
         bansRes,
         movementRes
       ] = await Promise.all([
-        fetch("http://localhost:3000/logs"),
-        fetch("http://localhost:3000/detections"),
-        fetch("http://localhost:3000/players"),
-        fetch("http://localhost:3000/alerts"),
-        fetch("http://localhost:3000/bans"),
-        fetch("http://localhost:3000/movement")
+        fetch("https://aegis-backend-gwu4.onrender.com/logs"),
+        fetch("https://aegis-backend-gwu4.onrender.com/detections"),
+        fetch("https://aegis-backend-gwu4.onrender.com/players"),
+        fetch("https://aegis-backend-gwu4.onrender.com/alerts"),
+        fetch("https://aegis-backend-gwu4.onrender.com/bans"),
+        fetch("https://aegis-backend-gwu4.onrender.com/movement")
       ]);
 
       setLogs(await logsRes.json());
@@ -53,7 +53,7 @@ function App() {
 
   // ACTIONS
   const sendAction = async (type, player) => {
-    await fetch("http://localhost:3000/action", {
+    await fetch("https://aegis-backend-gwu4.onrender.com/action", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -87,7 +87,7 @@ function App() {
       console.log("❌ ERROR CARGANDO FRAME");
     };
 
-    img.src = `http://localhost:3000/frame?t=${Date.now()}`;
+    img.src = `https://aegis-backend-gwu4.onrender.com/frame?t=${Date.now()}`;
   }
 
   // IMPORTANTE: cargar uno inmediato

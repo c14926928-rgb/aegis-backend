@@ -36,7 +36,9 @@ app.post("/player-event", (req, res) => {
     players.push({
       name,
       uuid,
-      ping: 0,
+      ip: ip || "Unknown",
+      discord: discord || "Not linked",
+      license: license || "N/A",
       status: "ONLINE"
     });
 
@@ -45,21 +47,10 @@ app.post("/player-event", (req, res) => {
 
   if (action === "LEAVE") {
     players = players.filter(p => p.name !== name);
-
     console.log("🔴 LEAVE:", name);
   }
 
   res.sendStatus(200);
-});
-
-app.get("/players", (req, res) => {
-  res.json(players.map(p => ({
-    name: p.name,
-    uuid: p.uuid,
-    ping: p.ping ?? 0,
-    status: p.status ?? "ONLINE",
-    discord: p.uuid ? (linkedAccounts.get(p.uuid) || null) : null
-  })));
 });
 // ================== LOGS ==================
 
@@ -241,10 +232,12 @@ app.post("/confirm-link", (req, res) => {
   console.log("✅ LINKED:", uuid, "->", discordId);
 
   res.sendStatus(200);
+  
+  require("./bot");
 });
 
 // ================== START SERVER ==================
 
 app.listen(3000, () => {
-  console.log("🚀 Server running on port 3000");
+  console.log(" Server running ");
 });
