@@ -94,7 +94,7 @@ function App() {
   
   loadFrame();
 
-  const interval = setInterval(loadFrame, 300);
+  const interval = setInterval(loadFrame, 1000);
 
   function render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
