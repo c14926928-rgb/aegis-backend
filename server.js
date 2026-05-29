@@ -52,6 +52,12 @@ app.post("/player-event", (req, res) => {
 
   res.sendStatus(200);
 });
+
+
+app.get("/players", (req, res) => {
+  res.json(players);
+});
+
 // ================== LOGS ==================
 
 app.post("/log", (req, res) => {
@@ -161,7 +167,7 @@ app.get("/bans", (req, res) => {
   res.json(bans);
 });
 
-// ================== BANS ==================
+// ================== MOVEMENT ==================
 
 app.post("/movement", (req, res) => {
   const { name, x, y, z, yaw, pitch } = req.body;
@@ -239,5 +245,9 @@ app.post("/confirm-link", (req, res) => {
 // ================== START SERVER ==================
 
 app.listen(3000, () => {
-  console.log(" Server running ");
+  console.log("🚀 Server running on port 3000");
 });
+
+// ================== DISCORD BOT ==================
+
+require("./bot");
