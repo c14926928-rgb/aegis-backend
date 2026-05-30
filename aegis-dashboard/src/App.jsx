@@ -45,6 +45,7 @@ function App() {
   };
 
   // AUTO REFRESH
+  
   useEffect(() => {
     fetchData();
     const i = setInterval(fetchData, 2000);
@@ -65,6 +66,7 @@ function App() {
  useEffect(() => {
 
   // SOLO CUANDO ESTÁS EN SPECTATE
+  
   if (tab !== "spectate") return;
 
   const canvas = canvasRef.current;

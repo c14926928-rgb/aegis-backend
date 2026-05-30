@@ -5,66 +5,80 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-console.log("🔥 Aegis Backend Loaded");
+console.log("Conclave AegisAC Backend Loaded");
 
 // ================== STORAGE ==================
 
-let players = [];
+let servers = {};
 let logs = [];
 let detections = [];
 let alerts = [];
 let bans = [];
 let lastAction = {};
 let movements = {};
-let lastLogTime = 0;
-let linkCodes = {}; 
-let linkedAccounts = {}; 
+let linkedAccounts = {};
+let linkCodes = {};
+let lastFrame = null;
+
 // ================== ROOT ==================
 
 app.get("/", (req, res) => {
-  res.send("Aegis Backend Running");
+  res.send("Conclave AegisAC Backend Running");
 });
 
 // ================== PLAYERS ==================
 
 app.post("/player-event", (req, res) => {
-  const { name, uuid, action, ip, discord, license } = req.body;
+  const { serverId, name, uuid, action, ip, discord, license } = req.body;
+
+  if (!servers[serverId]) {
+    servers[serverId] = { players: [] };
+  }
+
+  let server = servers[serverId];
 
   if (action === "JOIN") {
-    players = players.filter(p => p.name !== name);
+    server.players = server.players.filter(p => p.name !== name);
 
-    players.push({
+    server.players.push({
       name,
       uuid,
       ip: ip || "Unknown",
-      discord: discord || "Not linked",
       license: license || "N/A",
       status: "ONLINE"
     });
 
-    console.log("🟢 JOIN:", name);
+    console.log(`🟢 [${serverId}] JOIN:`, name);
   }
 
   if (action === "LEAVE") {
-    players = players.filter(p => p.name !== name);
-    console.log("🔴 LEAVE:", name);
+    server.players = server.players.filter(p => p.name !== name);
+    console.log(`🔴 [${serverId}] LEAVE:`, name);
   }
 
   res.sendStatus(200);
 });
 
-
 app.get("/players", (req, res) => {
-  res.json(players);
+  const { serverId } = req.query;
+
+  if (!serverId || !servers[serverId]) {
+    return res.json([]);
+  }
+
+  res.json(
+    servers[serverId].players.map(p => ({
+      ...p,
+      discord: linkedAccounts[p.uuid] || "Not linked"
+    }))
+  );
 });
 
 // ================== LOGS ==================
 
 app.post("/log", (req, res) => {
   logs.push(req.body);
-
   console.log("📜 LOG:", req.body);
-
   res.sendStatus(200);
 });
 
@@ -72,31 +86,11 @@ app.get("/logs", (req, res) => {
   res.json(logs);
 });
 
-app.post("/frame", (req, res) => {
-  let data = [];
-
-  req.on("data", chunk => data.push(chunk));
-
-  req.on("end", () => {
-    lastFrame = Buffer.concat(data);
-
-    const now = Date.now();
-
-    if (now - lastLogTime > 10 * 60 * 1000) {
-      console.log("📸 FRAME RECEIVED");
-      lastLogTime = now;
-    }
-
-    res.sendStatus(200);
-  });
-});
 // ================== DETECTIONS ==================
 
 app.post("/detection", (req, res) => {
   detections.push(req.body);
-
   console.log("🚨 DETECTION:", req.body);
-
   res.sendStatus(200);
 });
 
@@ -109,14 +103,7 @@ app.get("/detections", (req, res) => {
 app.post("/alert", (req, res) => {
   const { player, type, vl, severity } = req.body;
 
-  const alert = {
-    player,
-    type,
-    vl,
-    severity,
-    time: Date.now()
-  };
-
+  const alert = { player, type, vl, severity, time: Date.now() };
   alerts.push(alert);
 
   console.log("⚠️ ALERT:", alert);
@@ -132,16 +119,12 @@ app.get("/alerts", (req, res) => {
 
 app.post("/action", (req, res) => {
   lastAction = req.body;
-
   console.log("🎯 ACTION:", lastAction);
-
   res.sendStatus(200);
 });
 
 app.get("/action", (req, res) => {
   res.json(lastAction);
-
-  // limpiar después de enviar
   lastAction = {};
 });
 
@@ -150,12 +133,7 @@ app.get("/action", (req, res) => {
 app.post("/ban", (req, res) => {
   const { name, uuid } = req.body;
 
-  const ban = {
-    name,
-    uuid,
-    date: Date.now()
-  };
-
+  const ban = { name, uuid, date: Date.now() };
   bans.push(ban);
 
   console.log("⛔ BAN:", ban);
@@ -171,9 +149,7 @@ app.get("/bans", (req, res) => {
 
 app.post("/movement", (req, res) => {
   const { name, x, y, z, yaw, pitch } = req.body;
-
   movements[name] = { x, y, z, yaw, pitch, time: Date.now() };
-
   res.sendStatus(200);
 });
 
@@ -183,7 +159,7 @@ app.get("/movement", (req, res) => {
 
 // ================== SCREEN CAPTURE ==================
 
-let lastFrame = null;
+let lastLog = 0;
 
 app.post("/frame", (req, res) => {
   let data = [];
@@ -192,7 +168,12 @@ app.post("/frame", (req, res) => {
 
   req.on("end", () => {
     lastFrame = Buffer.concat(data);
-    console.log("📸 FRAME RECEIVED");
+
+    if (Date.now() - lastLog > 10000) {
+      console.log("📸 FRAME RECEIVED");
+      lastLog = Date.now();
+    }
+
     res.sendStatus(200);
   });
 });
@@ -203,20 +184,33 @@ app.get("/frame", (req, res) => {
   }
 
   res.setHeader("Content-Type", "image/jpeg");
-  res.setHeader("Content-Length", lastFrame.length);
   res.setHeader("Cache-Control", "no-cache");
 
-  res.end(lastFrame); // usar end en vez de send
+  res.end(lastFrame);
 });
 
-// ================== DISCORD LINK ==================
+// ================== DISCORD LINK SYSTEM ==================
+
+app.post("/link", (req, res) => {
+  const { code } = req.body;
+
+  if (!linkCodes[code]) {
+    return res.status(404).json({ error: "Invalid code" });
+  }
+
+  const serverId = linkCodes[code].guildId;
+
+  delete linkCodes[code];
+
+  res.json({ serverId });
+});
 
 app.post("/generate-link", (req, res) => {
   const { uuid } = req.body;
 
   const code = Math.floor(1000 + Math.random() * 9000).toString();
 
-  linkCodes[code] = uuid;
+  linkCodes[code] = { uuid };
 
   console.log("🔗 LINK CODE:", code, "for", uuid);
 
@@ -226,11 +220,11 @@ app.post("/generate-link", (req, res) => {
 app.post("/confirm-link", (req, res) => {
   const { code, discordId } = req.body;
 
-  const uuid = linkCodes[code];
-
-  if (!uuid) {
+  if (!linkCodes[code]) {
     return res.status(400).json({ error: "Invalid code" });
   }
+
+  const uuid = linkCodes[code].uuid;
 
   linkedAccounts[uuid] = discordId;
   delete linkCodes[code];
@@ -238,16 +232,31 @@ app.post("/confirm-link", (req, res) => {
   console.log("✅ LINKED:", uuid, "->", discordId);
 
   res.sendStatus(200);
-  
-  require("./bot");
 });
 
-// ================== START SERVER ==================
+// ================== REGISTER SERVER ==================
+
+app.post("/register-server", (req, res) => {
+  const { serverId, name } = req.body;
+
+  if (!servers[serverId]) {
+    servers[serverId] = {
+      name,
+      players: []
+    };
+  }
+
+  console.log("🧠 Registered server:", name, serverId);
+
+  res.sendStatus(200);
+});
+
+// ================== START ==================
 
 app.listen(3000, () => {
   console.log("🚀 Server running on port 3000");
 });
 
-// ================== DISCORD BOT ==================
+// ================== BOT ==================
 
 require("./bot");
