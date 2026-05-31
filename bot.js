@@ -48,13 +48,12 @@ client.on("messageCreate", (message) => {
     message.reply(`🔗 Código de vinculación:\n${code}\nPon esto en el mod.`);
   }
 
-  // 🔥 COMANDO PANEL
-  if (message.content === "!panel") {
+ if (message.content === "!panel") {
 
-    const link = `https://fascinating-pastelito-b15e07.netlify.app=${message.guild.id}`;
+    const link = `https://fascinating-pastelito-b15e07.netlify.app/?server=${message.guild.id}`;
 
     message.reply(`🖥 Panel:\n${link}`);
-  }
+}
 });
 
 //====== LINKS ======
