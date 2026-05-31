@@ -89,6 +89,86 @@ if (message.content.startsWith("!webhook ")) {
   }
 }
 
+//====== GUIDE ======
+
+if (message.content === "!help") {
+
+  try {
+    await message.author.send(
+`🛡️ **AegisAC Help Menu**
+
+Welcome to AegisAC 🚨  
+Here’s everything you need to get started.
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+📌 **Core Commands**
+
+!setup → Full setup guide  
+!webhook → Configure alerts  
+!link → Link your Minecraft server  
+!panel → Open your dashboard  
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+⚙️ **Quick Setup (Recommended)**
+
+1. Run: !webhook  
+2. Set your Discord webhook  
+3. Run: !link  
+4. Use /link CODE in Minecraft  
+5. Run: !panel  
+
+✅ Done — your system is fully connected
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+🧠 **How the System Works**
+
+• The mod collects player data  
+• Data is sent to the backend  
+• The backend processes detections  
+• Alerts are sent to your Discord  
+
+Everything is automatic and server-specific.
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+📡 **Features**
+
+✔ Live player tracking  
+✔ Cheat detection alerts  
+✔ Real-time monitoring  
+✔ Multi-server support  
+✔ Discord integration  
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+🔒 **Security**
+
+• Webhooks are stored securely  
+• No sensitive data in the mod  
+• Each server is isolated  
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+❓ **Need Help?**
+
+Use !setup for a full step-by-step guide.
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+🚀 AegisAC is now ready to protect your server.
+`
+    );
+
+    message.reply("📩 Check your DMs for the help menu.");
+
+  } catch (err) {
+    message.reply("❌ I can't send you a DM. Please enable direct messages.");
+  }
+}
+
 //====== TOKEN ======
 
 client.login(process.env.TOKEN);
