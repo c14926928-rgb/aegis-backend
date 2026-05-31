@@ -57,6 +57,27 @@ client.on("messageCreate", (message) => {
   }
 });
 
+//====== WEBHOOKS ======
+
+if (message.content.startsWith("!webhook ")) {
+
+  const webhook = message.content.split(" ")[1];
+
+  await fetch("https://aegis-backend-gwu4.onrender.com/set-webhook", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      serverId: message.guild.id,
+      webhook
+    })
+  });
+
+  message.reply("✅ Webhook configurado correctamente");
+}
+
+
 //====== TOKEN ======
 
 client.login(process.env.TOKEN);

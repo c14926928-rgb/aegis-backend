@@ -4,6 +4,8 @@ const CLIENT_ID = "1509684454002659499";
 const CLIENT_SECRET = "Gfl1r7yoCl2AeWn8GgF1aYdi0aOFRsYS";
 const REDIRECT_URI = "https://aegis-backend-gwu4.onrender.com/auth/callback";
 const app = express();
+const fetch = require("node-fetch");
+
 
 app.use(cors());
 app.use(express.json());
@@ -12,6 +14,7 @@ console.log("Conclave AegisAC Backend Loaded");
 
 // ================== STORAGE ==================
 
+let webhooks = {};
 let servers = {};
 let logs = [];
 let detections = [];
@@ -21,7 +24,8 @@ let lastAction = {};
 let movements = {};
 let linkedAccounts = {};
 let linkCodes = {};
-let lastFrame = null;
+let frames = {};
+let sessions = {};
 
 // ================== ROOT ==================
 
@@ -91,14 +95,23 @@ app.get("/logs", (req, res) => {
 
 // ================== DETECTIONS ==================
 
-app.post("/detection", (req, res) => {
-  detections.push(req.body);
-  console.log("🚨 DETECTION:", req.body);
-  res.sendStatus(200);
-});
+app.post("/detection", async (req, res) => {
 
-app.get("/detections", (req, res) => {
-  res.json(detections);
+  detections.push(req.body);
+
+  const { player, check, vl, serverId } = req.body;
+
+  console.log("🚨 DETECTION:", req.body);
+
+  await sendDiscordAlert(
+    serverId,
+    `🚨 CHEAT DETECTED
+Player: ${player}
+Check: ${check}
+VL: ${vl}`
+  );
+console.log(`📡 Alert sent for server ${serverId}`);
+  res.sendStatus(200);
 });
 
 // ================== ALERTS ==================
@@ -117,6 +130,26 @@ app.post("/alert", (req, res) => {
 app.get("/alerts", (req, res) => {
   res.json(alerts);
 });
+
+async function sendDiscordAlert(serverId, message) {
+
+  const webhook = webhooks[serverId];
+  if (!webhook) return;
+
+  try {
+    await fetch(webhook, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        content: message
+      })
+    });
+  } catch (err) {
+    console.error("Webhook error:", err);
+  }
+}
 
 // ================== ACTIONS ==================
 
@@ -165,31 +198,33 @@ app.get("/movement", (req, res) => {
 let lastLog = 0;
 
 app.post("/frame", (req, res) => {
+ if (!serverId) {
+  return res.sendStatus(400);
+} 
+
   let data = [];
 
   req.on("data", chunk => data.push(chunk));
-
-  req.on("end", () => {
-    lastFrame = Buffer.concat(data);
 
     if (Date.now() - lastLog > 10000) {
       console.log("📸 FRAME RECEIVED");
       lastLog = Date.now();
     }
-
+     req.on("end", () => {
+    frames[serverId] = Buffer.concat(data);
     res.sendStatus(200);
   });
 });
 
 app.get("/frame", (req, res) => {
-  if (!lastFrame) {
-    return res.status(404).send("No frame yet");
+  const { serverId } = req.query;
+
+  if (!frames[serverId]) {
+    return res.status(404).send("No frame");
   }
 
   res.setHeader("Content-Type", "image/jpeg");
-  res.setHeader("Cache-Control", "no-cache");
-
-  res.end(lastFrame);
+  res.end(frames[serverId]);
 });
 
 // ================== DISCORD LINK SYSTEM ==================
@@ -271,6 +306,21 @@ app.get("/validate", (req, res) => {
 
   res.json({ success: true, user });
 });
+
+// ================== WEBHOOKS ==================
+
+app.post("/set-webhook", (req, res) => {
+  const { serverId, webhook } = req.body;
+
+ if (!webhook.startsWith("https://discord.com/api/webhooks/")) {
+  return res.status(400).send("Invalid webhook");
+}
+
+  console.log("🔗 Webhook guardado para", serverId);
+
+  res.sendStatus(200);
+});
+
 
 // ================== START ==================
 
