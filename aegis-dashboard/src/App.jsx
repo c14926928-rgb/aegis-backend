@@ -12,8 +12,12 @@ function App() {
   const [movement, setMovement] = useState({});
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const canvasRef = useRef(null);
- 
+  const [authorized, setAuthorized] = useState(null);
+  const [serverId, setServerId] = useState(null);
+  const [session, setSession] = useState(null);
+  
   // FETCH
+  
   const fetchData = async () => {
     try {
       const [
@@ -24,12 +28,12 @@ function App() {
         bansRes,
         movementRes
       ] = await Promise.all([
-        fetch("https://aegis-backend-gwu4.onrender.com/logs"),
-        fetch("https://aegis-backend-gwu4.onrender.com/detections"),
-        fetch("https://aegis-backend-gwu4.onrender.com/players"),
-        fetch("https://aegis-backend-gwu4.onrender.com/alerts"),
-        fetch("https://aegis-backend-gwu4.onrender.com/bans"),
-        fetch("https://aegis-backend-gwu4.onrender.com/movement")
+        fetch(`https://aegis-backend-gwu4.onrender.com/logs?serverId=${serverId}`),
+        fetch(`https://aegis-backend-gwu4.onrender.com/detections?serverId=${serverId}`),
+        fetch(`https://aegis-backend-gwu4.onrender.com/players?serverId=${serverId}`),
+        fetch(`https://aegis-backend-gwu4.onrender.com/alerts?serverId=${serverId}`),
+        fetch(`https://aegis-backend-gwu4.onrender.com/bans?serverId=${serverId}`),
+        fetch(`https://aegis-backend-gwu4.onrender.com/movement?serverId=${serverId}`)
       ]);
 
       setLogs(await logsRes.json());
@@ -120,9 +124,47 @@ function App() {
 
   return () => clearInterval(interval);
 
+  if (authorized === null) {
+  return <div style={{ color: "white", padding: "20px" }}>🔐 Checking access...</div>;
+}
+
+if (authorized === false) {
+  return <div style={{ color: "red", padding: "20px" }}>❌ No tienes acceso a este servidor</div>;
+}
+
 }, [tab]);
 
+useEffect(() => {
+
+  const params = new URLSearchParams(window.location.search);
+
+  const sessionParam = params.get("session");
+  const serverParam = params.get("server");
+
+  if (!sessionParam || !serverParam) {
+    setAuthorized(false);
+    return;
+  }
+
+  setSession(sessionParam);
+  setServerId(serverParam);
+
+  fetch(`https://aegis-backend-gwu4.onrender.com/validate?session=${sessionParam}&serverId=${serverParam}`)
+    .then(res => {
+      if (!res.ok) throw new Error();
+      return res.json();
+    })
+    .then(() => {
+      setAuthorized(true);
+    })
+    .catch(() => {
+      setAuthorized(false);
+    });
+
+}, []);
+
   return (
+
     <div style={styles.app}>
 
       {/* SIDEBAR */}

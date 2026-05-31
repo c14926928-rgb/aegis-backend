@@ -1,7 +1,10 @@
 const express = require("express");
 const cors = require("cors");
-
+const CLIENT_ID = "1509684454002659499";
+const CLIENT_SECRET = "Gfl1r7yoCl2AeWn8GgF1aYdi0aOFRsYS";
+const REDIRECT_URI = "https://aegis-backend-gwu4.onrender.com/auth/callback";
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
@@ -251,12 +254,30 @@ app.post("/register-server", (req, res) => {
   res.sendStatus(200);
 });
 
+// ================== VALIDATIONS ==================
+
+app.get("/validate", (req, res) => {
+  const { session, serverId } = req.query;
+
+  if (!sessions[session]) {
+    return res.status(401).json({ error: "Not logged in" });
+  }
+
+  const user = sessions[session];
+
+  if (!user.guilds.includes(serverId)) {
+    return res.status(403).json({ error: "No access to this server" });
+  }
+
+  res.json({ success: true, user });
+});
+
 // ================== START ==================
 
 app.listen(3000, () => {
   console.log("🚀 Server running on port 3000");
 });
 
-// ================== BOT ==================
+// ================== BOTS ==================
 
 require("./bot");

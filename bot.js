@@ -62,3 +62,11 @@ client.on("messageCreate", (message) => {
 //====== TOKEN ======
 
 client.login(process.env.TOKEN);
+
+const guildsRes = await fetch("https://discord.com/api/users/@me/guilds", {
+  headers: {
+    Authorization: `Bearer ${tokenData.access_token}`
+  }
+});
+
+const guilds = await guildsRes.json();
