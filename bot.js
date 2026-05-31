@@ -63,20 +63,31 @@ if (message.content.startsWith("!webhook ")) {
 
   const webhook = message.content.split(" ")[1];
 
-  await fetch("https://aegis-backend-gwu4.onrender.com/set-webhook", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      serverId: message.guild.id,
-      webhook
-    })
-  });
+  // VALIDAR FORMATO
+ 
+  if (!webhook || !webhook.startsWith("https://discord.com/api/webhooks/")) {
+    return message.reply("❌ Webhook inválido");
+  }
 
-  message.reply("✅ Webhook configurado correctamente");
+  try {
+    await fetch("https://aegis-backend-gwu4.onrender.com/set-webhook", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        serverId: message.guild.id,
+        webhook
+      })
+    });
+
+    message.reply("✅ Webhook configurado correctamente");
+
+  } catch (err) {
+    console.error(err);
+    message.reply("❌ Error al guardar webhook");
+  }
 }
-
 
 //====== TOKEN ======
 
