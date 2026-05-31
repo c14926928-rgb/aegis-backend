@@ -51,7 +51,7 @@ client.on("messageCreate", (message) => {
   // 🔥 COMANDO PANEL
   if (message.content === "!panel") {
 
-    const link = `https://aegis-dashboard.vercel.app/?server=${message.guild.id}`;
+    const link = `https://fascinating-pastelito-b15e07.netlify.app=${message.guild.id}`;
 
     message.reply(`🖥 Panel:\n${link}`);
   }
