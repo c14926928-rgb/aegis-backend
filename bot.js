@@ -31,13 +31,30 @@ client.on("guildCreate", async (guild) => {
 
 //====== MESAGGES ======
 
+const pendingLinks = new Map();
+
 client.on("messageCreate", (message) => {
-    if (message.content === "!panel") {
+  if (message.author.bot) return;
 
-        const link = `https://tu-dashboard.vercel.app/?server=${message.guild.id}`;
+  // COMANDO LINK
+  if (message.content === "!link") {
 
-        message.reply(`🖥 Panel:\n${link}`);
-    }
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+    pendingLinks.set(code, {
+      guildId: message.guild.id
+    });
+
+    message.reply(`🔗 Código de vinculación:\n${code}\nPon esto en el mod.`);
+  }
+
+  // 🔥 COMANDO PANEL
+  if (message.content === "!panel") {
+
+    const link = `https://aegis-dashboard.vercel.app/?server=${message.guild.id}`;
+
+    message.reply(`🖥 Panel:\n${link}`);
+  }
 });
 
 //====== LINKS ======
@@ -62,11 +79,3 @@ client.on("messageCreate", (message) => {
 //====== TOKEN ======
 
 client.login(process.env.TOKEN);
-
-const guildsRes = await fetch("https://discord.com/api/users/@me/guilds", {
-  headers: {
-    Authorization: `Bearer ${tokenData.access_token}`
-  }
-});
-
-const guilds = await guildsRes.json();
