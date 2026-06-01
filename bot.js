@@ -135,17 +135,25 @@ client.on("interactionCreate", async (interaction) => {
 
   // ===== LINK =====
   if (interaction.commandName === "link") {
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
 
-    pendingLinks.set(code, {
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+  await fetch("https://aegis-backend-gwu4.onrender.com/generate-link", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      uuid: "pending", // luego lo mejoras
       guildId: interaction.guild.id
-    });
+    })
+  });
 
-    return interaction.reply({
-      content: `🔗 Code: ${code}\nUse it in Minecraft with /link`,
-      ephemeral: true
-    });
-  }
+  return interaction.reply({
+    content: `🔗 Code: ${code}`,
+    ephemeral: true
+  });
+}
 
   // ===== WEBHOOK =====
   if (interaction.commandName === "webhook") {

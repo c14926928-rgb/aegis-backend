@@ -231,11 +231,13 @@ app.post("/link", (req, res) => {
     return res.status(404).json({ error: "Invalid code" });
   }
 
-  const serverId = linkCodes[code].guildId;
+  const { guildId } = linkCodes[code];
+
+  console.log("✅ SERVER LINKED:", guildId);
 
   delete linkCodes[code];
 
-  res.json({ serverId });
+  res.json({ guildId });
 });
 
 app.post("/generate-link", (req, res) => {
