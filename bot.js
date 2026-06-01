@@ -2,17 +2,21 @@ const { Client, GatewayIntentBits, REST, Routes } = require("discord.js");
 const fetch = require("node-fetch");
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
+  intents: [GatewayIntentBits.Guilds]
 });
 
 const pendingLinks = new Map();
 
-//====== REGISTER SLASH COMMANDS ======
+//====== READY + REGISTER COMMANDS ======
 
 client.once("ready", async () => {
-  console.log(`Logged in as ${client.user.tag}`);
+  console.log(`🤖 Logged in as ${client.user.tag}`);
 
   const commands = [
+    {
+      name: "help",
+      description: "Show help menu"
+    },
     {
       name: "panel",
       description: "Open dashboard"
@@ -49,10 +53,10 @@ client.once("ready", async () => {
   }
 });
 
-//====== SERVERS ======
+//====== AUTO REGISTER SERVER ======
 
 client.on("guildCreate", async (guild) => {
-  console.log("Nuevo servidor:", guild.name);
+  console.log("🧠 New server:", guild.name);
 
   try {
     await fetch("https://aegis-backend-gwu4.onrender.com/register-server", {
@@ -65,9 +69,6 @@ client.on("guildCreate", async (guild) => {
         name: guild.name
       })
     });
-
-    console.log("Server registrado en backend");
-
   } catch (err) {
     console.error(err);
   }
@@ -78,7 +79,32 @@ client.on("guildCreate", async (guild) => {
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
-  // PANEL
+  // ===== HELP =====
+  if (interaction.commandName === "help") {
+    try {
+      await interaction.user.send(`🛡️ AegisAC Help
+
+Commands:
+/webhook → Set alerts
+/link → Link server
+/panel → Open dashboard
+
+Use /webhook to start.`);
+
+      return interaction.reply({
+        content: "📩 Check your DMs",
+        ephemeral: true
+      });
+
+    } catch {
+      return interaction.reply({
+        content: "❌ Enable DMs first",
+        ephemeral: true
+      });
+    }
+  }
+
+  // ===== PANEL =====
   if (interaction.commandName === "panel") {
     const link = `https://fascinating-pastelito-b15e07.netlify.app/?server=${interaction.guild.id}`;
 
@@ -88,7 +114,7 @@ client.on("interactionCreate", async (interaction) => {
     });
   }
 
-  // LINK
+  // ===== LINK =====
   if (interaction.commandName === "link") {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -102,77 +128,56 @@ client.on("interactionCreate", async (interaction) => {
     });
   }
 
-  // WEBHOOK
+  // ===== WEBHOOK =====
   if (interaction.commandName === "webhook") {
     const webhook = interaction.options.getString("url");
 
     if (!webhook.startsWith("https://discord.com/api/webhooks/")) {
-      return interaction.reply({ content: "❌ Invalid webhook", ephemeral: true });
+      return interaction.reply({
+        content: "❌ Invalid webhook",
+        ephemeral: true
+      });
     }
 
-    await fetch("https://aegis-backend-gwu4.onrender.com/set-webhook", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        serverId: interaction.guild.id,
-        webhook
-      })
-    });
+    try {
+      await fetch("https://aegis-backend-gwu4.onrender.com/set-webhook", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          serverId: interaction.guild.id,
+          webhook
+        })
+      });
 
-    return interaction.reply({
-      content: "✅ Webhook configured",
-      ephemeral: true
-    });
+      return interaction.reply({
+        content: "✅ Webhook configured",
+        ephemeral: true
+      });
+
+    } catch (err) {
+      console.error(err);
+      return interaction.reply({
+        content: "❌ Error saving webhook",
+        ephemeral: true
+      });
+    }
   }
 });
 
-//====== MESSAGE COMMANDS (NO BORRAR AÚN) ======
+//====== (OPCIONAL) MESSAGE COMMANDS BACKUP ======
 
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
 
-  // WEBHOOK
-  if (message.content.startsWith("!webhook ")) {
-    const webhook = message.content.split(" ")[1];
-
-    if (!webhook.startsWith("https://discord.com/api/webhooks/")) {
-      return message.reply("❌ Webhook inválido");
-    }
-
-    await fetch("https://aegis-backend-gwu4.onrender.com/set-webhook", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        serverId: message.guild.id,
-        webhook
-      })
-    });
-
-    message.reply("✅ Webhook configurado");
-  }
-
-  // LINK
-  if (message.content === "!link") {
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-
-    pendingLinks.set(code, {
-      guildId: message.guild.id
-    });
-
-    message.reply(`🔗 Código:\n${code}`);
-  }
-
-  // PANEL
+  // fallback solo si quieres mantener compatibilidad
   if (message.content === "!panel") {
     const link = `https://fascinating-pastelito-b15e07.netlify.app/?server=${message.guild.id}`;
     message.reply(`🖥 ${link}`);
   }
 });
 
-//====== TOKEN ======
+//====== LOGIN ======
 
 client.login(process.env.TOKEN);
