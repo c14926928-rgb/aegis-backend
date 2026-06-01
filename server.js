@@ -210,9 +210,16 @@ app.post("/frame", (req, res) => {
   req.on("data", chunk => data.push(chunk));
 
   req.on("end", () => {
+
+    if (Date.now() - lastLog > 10000) {
+      console.log("📸 FRAME RECEIVED");
+      lastLog = Date.now();
+    }
+
     frames[serverId] = Buffer.concat(data);
     res.sendStatus(200);
   });
+
 });
 
 // ================== DISCORD LINK SYSTEM ==================
