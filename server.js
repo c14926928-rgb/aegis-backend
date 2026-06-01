@@ -198,33 +198,21 @@ app.get("/movement", (req, res) => {
 let lastLog = 0;
 
 app.post("/frame", (req, res) => {
- if (!serverId) {
-  return res.sendStatus(400);
-} 
+
+  const serverId = req.query.serverId;
+
+  if (!serverId) {
+    return res.sendStatus(400);
+  }
 
   let data = [];
 
   req.on("data", chunk => data.push(chunk));
 
-    if (Date.now() - lastLog > 10000) {
-      console.log("📸 FRAME RECEIVED");
-      lastLog = Date.now();
-    }
-     req.on("end", () => {
+  req.on("end", () => {
     frames[serverId] = Buffer.concat(data);
     res.sendStatus(200);
   });
-});
-
-app.get("/frame", (req, res) => {
-  const { serverId } = req.query;
-
-  if (!frames[serverId]) {
-    return res.status(404).send("No frame");
-  }
-
-  res.setHeader("Content-Type", "image/jpeg");
-  res.end(frames[serverId]);
 });
 
 // ================== DISCORD LINK SYSTEM ==================
