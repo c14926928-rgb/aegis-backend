@@ -186,7 +186,7 @@ useEffect(() => {
       <div style={styles.main}>
 
         <div style={styles.header}>
-          ⚡ Conclave AegisAC
+          🗝️ Conclave AegisAC
         </div>
 
         {/* DASHBOARD */}
