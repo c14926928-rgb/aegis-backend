@@ -233,6 +233,12 @@ app.post("/link", (req, res) => {
 
   const { guildId } = linkCodes[code];
 
+  if (!servers[guildId]) {
+    servers[guildId] = {};
+  }
+
+  servers[guildId].linked = true;
+
   console.log("✅ SERVER LINKED:", guildId);
 
   delete linkCodes[code];
@@ -241,13 +247,11 @@ app.post("/link", (req, res) => {
 });
 
 app.post("/generate-link", (req, res) => {
-  const { uuid } = req.body;
+  const { uuid, guildId, code } = req.body;
 
-  const code = Math.floor(1000 + Math.random() * 9000).toString();
+  linkCodes[code] = { uuid, guildId };
 
-  linkCodes[code] = { uuid };
-
-  console.log("🔗 LINK CODE:", code, "for", uuid);
+  console.log("🔗 LINK CODE:", code, "Guild:", guildId);
 
   res.json({ code });
 });
@@ -286,6 +290,22 @@ app.post("/register-server", (req, res) => {
   res.sendStatus(200);
 });
 
+app.post("/register-server-ip", (req, res) => {
+  const { serverId, ip, port } = req.body;
+
+  if (!servers[serverId]) {
+    servers[serverId] = {};
+  }
+
+  servers[serverId].realIP = ip;
+  servers[serverId].port = port;
+  servers[serverId].proxy = "YOUR_VPS_IP:25565";
+
+  console.log("🌐 Server IP registrada:", servers[serverId]);
+
+  res.sendStatus(200);
+});
+
 // ================== VALIDATIONS ==================
 
 app.get("/validate", (req, res) => {
@@ -309,15 +329,30 @@ app.get("/validate", (req, res) => {
 app.post("/set-webhook", (req, res) => {
   const { serverId, webhook } = req.body;
 
- if (!webhook.startsWith("https://discord.com/api/webhooks/")) {
-  return res.status(400).send("Invalid webhook");
-}
+  if (!webhook.startsWith("https://discord.com/api/webhooks/")) {
+    return res.status(400).send("Invalid webhook");
+  }
+
+  webhooks[serverId] = webhook; 
 
   console.log("🔗 Webhook guardado para", serverId);
 
   res.sendStatus(200);
 });
 
+// ================== PROXY ==================
+
+app.get("/get-proxy", (req, res) => {
+  const { serverId } = req.query;
+
+  if (!servers[serverId]) {
+    return res.status(404).send("No server");
+  }
+
+  res.json({
+    proxy: servers[serverId].proxy || "Not assigned yet"
+  });
+});
 
 // ================== START ==================
 

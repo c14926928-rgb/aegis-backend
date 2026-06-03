@@ -1,11 +1,8 @@
 const { Client, GatewayIntentBits, REST, Routes, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require("discord.js");
-const fetch = require("node-fetch");
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds]
 });
-
-const pendingLinks = new Map();
 
 //====== READY ======
 
@@ -62,101 +59,86 @@ client.on("guildCreate", async (guild) => {
   }
 });
 
-//====== SLASH COMMANDS ======
+//====== COMMANDS ======
 
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
-  // ===== HELP (PRO VERSION) =====
+  // ===== HELP =====
   if (interaction.commandName === "help") {
 
     const embed = new EmbedBuilder()
-      .setTitle("🛡️ Conclave AegisAC • Anti-Cheat System")
+      .setTitle("🛡️ Conclave AegisAC • Anti-Cheat")
       .setColor(0x6c5ce7)
-      .setDescription("Conclave AegisAC Real-time anti-cheat protecting your Minecraft server 24/7.")
-
+      .setDescription("Real-time anti-cheat system for Minecraft servers.")
       .addFields(
-        {
-          name: "🧠 What it does",
-          value: "Detects cheats, tracks players and sends alerts in real-time."
-        },
-        {
-          name: "⚙️ System",
-          value: "Mod → Backend → Discord → Web Panel"
-        },
-        {
-          name: "🚀 Setup",
-          value:
-`1. /webhook  
-2. /link  
-3. /link CODE (in Minecraft)  
-4. /panel`
-        },
-        {
-          name: "📌 Commands",
-          value:
-`/webhook → Alerts  
-/link → Link server  
-/panel → Dashboard`
-        }
-      )
-
-      .setFooter({ text: "AegisAC System" });
+        { name: "📌 Commands", value: "/webhook\n/link\n/panel" },
+        { name: "⚙️ Setup", value: "1. /webhook\n2. /link\n3. /link CODE\n4. /panel" }
+      );
 
     return interaction.reply({
       embeds: [embed],
-      ephemeral: true
+      flags: 64
     });
   }
 
-  // ===== PANEL (BOTÓN PRO) =====
+  // ===== PANEL (FIXED) =====
   if (interaction.commandName === "panel") {
 
-    const link = `https://fascinating-pastelito-b15e07.netlify.app/?server=${interaction.guild.id}`;
+    try {
+      const res = await fetch(`https://aegis-backend-gwu4.onrender.com/get-proxy?serverId=${interaction.guild.id}`);
+      const data = await res.json();
 
-    const embed = new EmbedBuilder()
-      .setTitle("🖥 Aegis Dashboard")
-      .setDescription("Access your real-time monitoring panel")
-      .setColor(0x6c5ce7);
+      const embed = new EmbedBuilder()
+        .setTitle("🛡️ Protected Server")
+        .setDescription(`IP: ${data.proxy || "Not assigned yet"}`)
+        .setColor(0x6c5ce7);
 
-    const button = new ButtonBuilder()
-      .setLabel("Open Dashboard")
-      .setStyle(ButtonStyle.Link)
-      .setURL(link);
+      const button = new ButtonBuilder()
+        .setLabel("Open Dashboard")
+        .setStyle(ButtonStyle.Link)
+        .setURL(`https://fascinating-pastelito-b15e07.netlify.app/?server=${interaction.guild.id}`);
 
-    const row = new ActionRowBuilder().addComponents(button);
+      const row = new ActionRowBuilder().addComponents(button);
 
-    return interaction.reply({
-      embeds: [embed],
-      components: [row],
-      ephemeral: true
-    });
+      return interaction.reply({
+        embeds: [embed],
+        components: [row],
+        flags: 64
+      });
+
+    } catch (err) {
+      console.error(err);
+      return interaction.reply({
+        content: "❌ Failed to fetch proxy",
+        flags: 64
+      });
+    }
   }
 
   // ===== LINK =====
- if (interaction.commandName === "link") {
+  if (interaction.commandName === "link") {
 
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
 
-  // RESPONDE A DISCORD
-  await interaction.reply({
-    content: `🔗 Code: ${code}`,
-    flags: 64
-  });
+    await interaction.reply({
+      content: `🔗 Code: ${code}`,
+      flags: 64
+    });
 
-  // ENVÍA AL BACKEND
-  fetch("https://aegis-backend-gwu4.onrender.com/generate-link", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      uuid: "pending",
-      guildId: interaction.guild.id,
-      code
-    })
-  }).catch(console.error);
-}
+    fetch("https://aegis-backend-gwu4.onrender.com/generate-link", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        uuid: "pending",
+        guildId: interaction.guild.id,
+        code
+      })
+    }).catch(console.error);
+  }
+
   // ===== WEBHOOK =====
   if (interaction.commandName === "webhook") {
     const webhook = interaction.options.getString("url");
@@ -164,7 +146,7 @@ client.on("interactionCreate", async (interaction) => {
     if (!webhook.startsWith("https://discord.com/api/webhooks/")) {
       return interaction.reply({
         content: "❌ Invalid webhook",
-        ephemeral: true
+        flags: 64
       });
     }
 
@@ -182,14 +164,14 @@ client.on("interactionCreate", async (interaction) => {
 
       return interaction.reply({
         content: "✅ Webhook configured",
-        ephemeral: true
+        flags: 64
       });
 
     } catch (err) {
       console.error(err);
       return interaction.reply({
         content: "❌ Error saving webhook",
-        ephemeral: true
+        flags: 64
       });
     }
   }
