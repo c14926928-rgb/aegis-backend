@@ -12,7 +12,7 @@ app.use(express.json());
 
 console.log("Conclave AegisAC Backend Loaded");
 
-// ================== STORAGE ==================
+// ================== STORAGE LET ==================
 
 let webhooks = {};
 let servers = {};
@@ -26,6 +26,10 @@ let linkedAccounts = {};
 let linkCodes = {};
 let frames = {};
 let sessions = {};
+
+// ================== STORAGE CONST ==================
+
+const servers = {};
 
 // ================== ROOT ==================
 
@@ -224,27 +228,60 @@ app.post("/frame", (req, res) => {
 
 // ================== DISCORD LINK SYSTEM ==================
 
-app.post("/link", (req, res) => {
-  const { code } = req.body;
+if (interaction.commandName === "link") {
 
-  if (!linkCodes[code]) {
-    return res.status(404).json({ error: "Invalid code" });
+  const ip = interaction.options.getString("ip");
+
+  await interaction.reply({
+    content: "🔄 Checking server...",
+    flags: 64
+  });
+
+  try {
+
+    const check = await fetch(`https://aegis-backend-gwu4.onrender.com/is-linked?serverId=${interaction.guild.id}`);
+    const checkData = await check.json();
+
+    if (!checkData.linked) {
+      return interaction.editReply({
+        content: "❌ Server not linked.\nUse `/link` system first in Minecraft.",
+        flags: 64
+      });
+    }
+
+    const res = await fetch("https://aegis-backend-gwu4.onrender.com/register-protection", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        serverId: interaction.guild.id,
+        ip
+      })
+    });
+
+    const data = await res.json();
+
+    return interaction.editReply({
+      content:
+`🛡️ **Server Protected**
+
+🔒 Secure ID: ${data.secureId}
+
+⚠️ Your real IP is hidden.
+Do NOT share it.`,
+      flags: 64
+    });
+
+  } catch (err) {
+    console.error(err);
+
+    return interaction.editReply({
+      content: "❌ Error protecting server",
+      flags: 64
+    });
   }
-
-  const { guildId } = linkCodes[code];
-
-  if (!servers[guildId]) {
-    servers[guildId] = {};
-  }
-
-  servers[guildId].linked = true;
-
-  console.log("✅ SERVER LINKED:", guildId);
-
-  delete linkCodes[code];
-
-  res.json({ guildId });
-});
+}
 
 app.post("/generate-link", (req, res) => {
   const { uuid, guildId, code } = req.body;
@@ -271,6 +308,16 @@ app.post("/confirm-link", (req, res) => {
   console.log("✅ LINKED:", uuid, "->", discordId);
 
   res.sendStatus(200);
+});
+
+app.get("/is-linked", (req, res) => {
+  const { serverId } = req.query;
+
+  if (!linkedServers[serverId]) {
+    return res.json({ linked: false });
+  }
+
+  res.json({ linked: true });
 });
 
 // ================== REGISTER SERVER ==================
@@ -304,6 +351,25 @@ app.post("/register-server-ip", (req, res) => {
   console.log("🌐 Server IP registrada:", servers[serverId]);
 
   res.sendStatus(200);
+});
+
+app.post("/register-protection", (req, res) => {
+  const { serverId, ip } = req.body;
+
+  // generar “IP falsa” (secureId)
+  const secureId = "aegis-" + Math.random().toString(36).substring(2, 10);
+
+  servers[serverId] = {
+    realIP: ip,
+    secureId,
+    status: "protected"
+  };
+
+  console.log("🛡️ Server protegido:", servers[serverId]);
+
+  res.json({
+    secureId
+  });
 });
 
 // ================== VALIDATIONS ==================
@@ -352,6 +418,16 @@ app.get("/get-proxy", (req, res) => {
   res.json({
     proxy: servers[serverId].proxy || "Not assigned yet"
   });
+});
+
+app.get("/get-server", (req, res) => {
+  const { serverId } = req.query;
+
+  if (!servers[serverId]) {
+    return res.status(404).send("Not found");
+  }
+
+  res.json(servers[serverId]);
 });
 
 // ================== START ==================

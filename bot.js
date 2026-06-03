@@ -10,22 +10,39 @@ client.once("ready", async () => {
   console.log(`🤖 Logged in as ${client.user.tag}`);
 
   const commands = [
-    { name: "help", description: "Show help menu" },
-    { name: "panel", description: "Open dashboard" },
-    { name: "link", description: "Generate link code" },
-    {
-      name: "webhook",
-      description: "Set webhook",
-      options: [
-        {
-          name: "url",
-          type: 3,
-          description: "Webhook URL",
-          required: true
-        }
-      ]
-    }
-  ];
+  {
+    name: "help",
+    description: "Show help menu"
+  },
+  {
+    name: "panel",
+    description: "Open dashboard"
+  },
+  {
+    name: "link",
+    description: "Protect your server",
+    options: [
+      {
+        name: "ip",
+        type: 3,
+        description: "Server IP (example: play.server.com)",
+        required: true
+      }
+    ]
+  },
+  {
+    name: "webhook",
+    description: "Set webhook",
+    options: [
+      {
+        name: "url",
+        type: 3,
+        description: "Webhook URL",
+        required: true
+      }
+    ]
+  }
+];
 
   const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
 
@@ -65,6 +82,7 @@ client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
   // ===== HELP =====
+ 
   if (interaction.commandName === "help") {
 
     const embed = new EmbedBuilder()
@@ -81,6 +99,7 @@ client.on("interactionCreate", async (interaction) => {
       flags: 64
     });
   }
+  
 
   // ===== PANEL (FIXED) =====
   if (interaction.commandName === "panel") {
