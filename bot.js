@@ -138,11 +138,13 @@ client.on("interactionCreate", async (interaction) => {
 
   const code = Math.floor(100000 + Math.random() * 900000).toString();
 
+  // RESPONDE A DISCORD
   await interaction.reply({
     content: `🔗 Code: ${code}`,
-    ephemeral: true
+    flags: 64
   });
 
+  // ENVÍA AL BACKEND
   fetch("https://aegis-backend-gwu4.onrender.com/generate-link", {
     method: "POST",
     headers: {

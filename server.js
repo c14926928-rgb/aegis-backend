@@ -4,7 +4,7 @@ const CLIENT_ID = "1509684454002659499";
 const CLIENT_SECRET = "Gfl1r7yoCl2AeWn8GgF1aYdi0aOFRsYS";
 const REDIRECT_URI = "https://aegis-backend-gwu4.onrender.com/auth/callback";
 const app = express();
-const fetch = require("node-fetch");
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
 
 app.use(cors());
