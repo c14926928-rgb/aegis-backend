@@ -14,6 +14,7 @@ console.log("Conclave AegisAC Backend Loaded");
 
 // ================== STORAGE LET ==================
 
+let heartbeats = {};
 let webhooks = {};
 let servers = {};
 let logs = [];
@@ -27,9 +28,43 @@ let frames = {};
 let sessions = {};
 let linkedServers = {};
 
-// ================== STORAGE CONST ==================
+// ================== HEARTBEATS ==================
 
+app.post("/heartbeat", (req, res) => {
+  const { serverId } = req.body;
 
+  heartbeats[serverId] = Date.now();
+
+  res.sendStatus(200);
+});
+
+app.get("/status", (req, res) => {
+  const { id } = req.query; // secureId
+
+  const server = Object.values(servers).find(s => s.secureId === id);
+
+  if (!server) {
+    return res.json({ status: "disconnected" });
+  }
+
+  const serverId = Object.keys(servers).find(
+    key => servers[key].secureId === id
+  );
+
+  const last = heartbeats[serverId];
+
+  if (!last) {
+    return res.json({ status: "disconnected" });
+  }
+
+  const diff = Date.now() - last;
+
+  if (diff > 10000) {
+    return res.json({ status: "disconnected" });
+  }
+
+  res.json({ status: "connected" });
+});
 
 // ================== ROOT ==================
 
