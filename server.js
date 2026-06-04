@@ -41,16 +41,15 @@ app.post("/heartbeat", (req, res) => {
 app.get("/status", (req, res) => {
   const { id } = req.query; // secureId
 
-  const server = Object.values(servers).find(s => s.secureId === id);
+  const entry = Object.entries(servers).find(
+    ([, s]) => s.secureId === id
+  );
 
-  if (!server) {
+  if (!entry) {
     return res.json({ status: "disconnected" });
   }
 
-  const serverId = Object.keys(servers).find(
-    key => servers[key].secureId === id
-  );
-
+  const [serverId] = entry;
   const last = heartbeats[serverId];
 
   if (!last) {

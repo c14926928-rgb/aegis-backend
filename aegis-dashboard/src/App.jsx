@@ -185,6 +185,15 @@ useEffect(() => {
       {/* MAIN */}
       <div style={styles.main}>
 
+      <div id="status" style="
+  position:absolute;
+  top:20px;
+  right:30px;
+  font-weight:bold;
+">
+  🔴 Disconnected
+</div>
+
         <div style={styles.header}>
           🗝️ Conclave AegisAC
         </div>
@@ -199,6 +208,7 @@ useEffect(() => {
       display: "flex",
       gap: "15px",
       marginTop: "15px"
+      
     }}>
 
       {/* ONLINE */}
