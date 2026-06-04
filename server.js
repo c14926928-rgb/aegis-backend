@@ -23,13 +23,13 @@ let bans = [];
 let lastAction = {};
 let movements = {};
 let linkedAccounts = {};
-let linkCodes = {};
 let frames = {};
 let sessions = {};
+let linkedServers = {};
 
 // ================== STORAGE CONST ==================
 
-const servers = {};
+
 
 // ================== ROOT ==================
 
@@ -84,6 +84,11 @@ app.get("/players", (req, res) => {
     }))
   );
 });
+
+
+// ================== PANEL ==================
+
+
 
 // ================== LOGS ==================
 
@@ -228,97 +233,7 @@ app.post("/frame", (req, res) => {
 
 // ================== DISCORD LINK SYSTEM ==================
 
-if (interaction.commandName === "link") {
 
-  const ip = interaction.options.getString("ip");
-
-  await interaction.reply({
-    content: "🔄 Checking server...",
-    flags: 64
-  });
-
-  try {
-
-    const check = await fetch(`https://aegis-backend-gwu4.onrender.com/is-linked?serverId=${interaction.guild.id}`);
-    const checkData = await check.json();
-
-    if (!checkData.linked) {
-      return interaction.editReply({
-        content: "❌ Server not linked.\nUse `/link` system first in Minecraft.",
-        flags: 64
-      });
-    }
-
-    const res = await fetch("https://aegis-backend-gwu4.onrender.com/register-protection", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        serverId: interaction.guild.id,
-        ip
-      })
-    });
-
-    const data = await res.json();
-
-    return interaction.editReply({
-      content:
-`🛡️ **Server Protected**
-
-🔒 Secure ID: ${data.secureId}
-
-⚠️ Your real IP is hidden.
-Do NOT share it.`,
-      flags: 64
-    });
-
-  } catch (err) {
-    console.error(err);
-
-    return interaction.editReply({
-      content: "❌ Error protecting server",
-      flags: 64
-    });
-  }
-}
-
-app.post("/generate-link", (req, res) => {
-  const { uuid, guildId, code } = req.body;
-
-  linkCodes[code] = { uuid, guildId };
-
-  console.log("🔗 LINK CODE:", code, "Guild:", guildId);
-
-  res.json({ code });
-});
-
-app.post("/confirm-link", (req, res) => {
-  const { code, discordId } = req.body;
-
-  if (!linkCodes[code]) {
-    return res.status(400).json({ error: "Invalid code" });
-  }
-
-  const uuid = linkCodes[code].uuid;
-
-  linkedAccounts[uuid] = discordId;
-  delete linkCodes[code];
-
-  console.log("✅ LINKED:", uuid, "->", discordId);
-
-  res.sendStatus(200);
-});
-
-app.get("/is-linked", (req, res) => {
-  const { serverId } = req.query;
-
-  if (!linkedServers[serverId]) {
-    return res.json({ linked: false });
-  }
-
-  res.json({ linked: true });
-});
 
 // ================== REGISTER SERVER ==================
 
@@ -338,11 +253,17 @@ app.post("/register-server", (req, res) => {
 });
 
 app.post("/register-server-ip", (req, res) => {
-  const { serverId, ip, port } = req.body;
+ 
+  if (!ip || ip.length < 3) {
+  return res.status(400).json({ error: "Invalid IP" });
+}
 
-  if (!servers[serverId]) {
-    servers[serverId] = {};
-  }
+  servers[serverId] = {
+  ...servers[serverId],
+  realIP: ip,
+  secureId,
+  status: "protected"
+};
 
   servers[serverId].realIP = ip;
   servers[serverId].port = port;
@@ -356,10 +277,14 @@ app.post("/register-server-ip", (req, res) => {
 app.post("/register-protection", (req, res) => {
   const { serverId, ip } = req.body;
 
-  // generar “IP falsa” (secureId)
+  if (!ip || ip.length < 3) {
+    return res.status(400).json({ error: "Invalid IP" });
+  }
+
   const secureId = "aegis-" + Math.random().toString(36).substring(2, 10);
 
   servers[serverId] = {
+    ...servers[serverId],
     realIP: ip,
     secureId,
     status: "protected"
@@ -367,9 +292,7 @@ app.post("/register-protection", (req, res) => {
 
   console.log("🛡️ Server protegido:", servers[serverId]);
 
-  res.json({
-    secureId
-  });
+  res.json({ secureId });
 });
 
 // ================== VALIDATIONS ==================
