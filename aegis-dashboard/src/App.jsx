@@ -15,8 +15,7 @@ function App() {
   const [authorized, setAuthorized] = useState(null);
   const [serverId, setServerId] = useState(null);
   const [session, setSession] = useState(null);
-  
-  // FETCH
+  const [status, setStatus] = useState("disconnected");
   
   const fetchData = async () => {
     try {
@@ -48,15 +47,28 @@ function App() {
     }
   };
 
-  // AUTO REFRESH
-  
-  useEffect(() => {
-    fetchData();
-    const i = setInterval(fetchData, 2000);
-    return () => clearInterval(i);
-  }, []);
+  const fetchStatus = async () => {
+  try {
+    const res = await fetch(`https://aegis-backend-gwu4.onrender.com/status?id=${serverId}`);
+    const data = await res.json();
+    setStatus(data.status);
+  } catch (err) {
+    console.error("STATUS ERROR:", err);
+  }
+};
 
-  // ACTIONS
+  useEffect(() => {
+  fetchData();
+  fetchStatus();
+
+  const i = setInterval(() => {
+    fetchData();
+    fetchStatus();
+  }, 3000);
+
+  return () => clearInterval(i);
+}, [serverId]);
+
   const sendAction = async (type, player) => {
     await fetch("https://aegis-backend-gwu4.onrender.com/action", {
       method: "POST",
@@ -69,8 +81,6 @@ function App() {
 
  useEffect(() => {
 
-  // SOLO CUANDO ESTÁS EN SPECTATE
-  
   if (tab !== "spectate") return;
 
   const canvas = canvasRef.current;
@@ -95,8 +105,6 @@ function App() {
 
     img.src = `https://aegis-backend-gwu4.onrender.com/frame?t=${Date.now()}`;
   }
-
-  // IMPORTANTE: cargar uno inmediato
   
   loadFrame();
 
@@ -139,8 +147,8 @@ useEffect(() => {
   const params = new URLSearchParams(window.location.search);
 
   const sessionParam = params.get("session");
-  const serverParam = params.get("server");
-
+  const serverParam = params.get("id");
+  
   if (!sessionParam || !serverParam) {
     setAuthorized(false);
     return;
@@ -185,18 +193,21 @@ useEffect(() => {
       {/* MAIN */}
       <div style={styles.main}>
 
-      <div id="status" style="
-  position:absolute;
-  top:20px;
-  right:30px;
-  font-weight:bold;
-">
-  🔴 Disconnected
-</div>
+<div style={styles.header}>
+  🗝️ Conclave AegisAC
 
-        <div style={styles.header}>
-          🗝️ Conclave AegisAC
-        </div>
+  <div style={{
+    position: "absolute",
+    right: "30px",
+    top: "25px",
+    fontSize: "14px",
+    fontWeight: "bold",
+    color: status === "connected" ? "#4CAF50" : "#F44336"
+  }}>
+    {status === "connected" ? "🟢 Connected" : "🔴 Disconnected"}
+  </div>
+
+</div>
 
         {/* DASHBOARD */}
        {tab === "dashboard" && (
