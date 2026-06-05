@@ -19,16 +19,16 @@ client.once("ready", async () => {
     description: "Open dashboard"
   },
   {
-    name: "link",
-    description: "Protect your server",
-    options: [
-      {
-        name: "ip",
-        type: 3,
-        description: "Server IP (example: play.server.com)",
-        required: true
-      }
-    ]
+  name: "link",
+  description: "Protect your server",
+  options: [
+    {
+      name: "ip",
+      type: 3,
+      description: "Server IP",
+      required: true
+    }
+  ]
   },
   {
     name: "webhook",
@@ -100,8 +100,8 @@ client.on("interactionCreate", async (interaction) => {
     });
   }
   
-
   // ===== PANEL (FIXED) =====
+
   if (interaction.commandName === "panel") {
 
     try {
@@ -135,30 +135,54 @@ client.on("interactionCreate", async (interaction) => {
     }
   }
 
-  // ===== LINK =====
-  if (interaction.commandName === "link") {
+ // ===== LINK =====
+ 
+if (interaction.commandName === "link") {
 
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+  const ip = interaction.options.getString("ip");
 
-    await interaction.reply({
-      content: `🔗 Code: ${code}`,
-      flags: 64
-    });
+  await interaction.reply({
+    content: "🔄 Linking server...",
+    ephemeral: true
+  });
 
-    fetch("https://aegis-backend-gwu4.onrender.com/generate-link", {
+  try {
+
+    const res = await fetch("https://aegis-backend-gwu4.onrender.com/link-server", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        uuid: "pending",
-        guildId: interaction.guild.id,
-        code
+        serverId: interaction.guild.id,
+        ip
       })
-    }).catch(console.error);
+    });
+
+    const data = await res.json();
+
+    return interaction.editReply({
+      content:
+`🛡️ Server Linked & Protected
+
+🔒 Secure ID: ${data.secureId}
+
+⚠️ Do NOT share your real IP`,
+      ephemeral: true
+    });
+
+  } catch (err) {
+    console.error(err);
+
+    return interaction.editReply({
+      content: "❌ Failed to link server",
+      ephemeral: true
+    });
   }
+}
 
   // ===== WEBHOOK =====
+
   if (interaction.commandName === "webhook") {
     const webhook = interaction.options.getString("url");
 
