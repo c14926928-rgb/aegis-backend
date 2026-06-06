@@ -267,7 +267,23 @@ app.post("/frame", (req, res) => {
 
 // ================== DISCORD LINK SYSTEM ==================
 
+app.post("/link-server", (req, res) => {
+  const { serverId, ip } = req.body;
 
+  const secureId = "aegis-" + Math.random().toString(36).substring(2, 10);
+
+  if (!servers[serverId]) {
+    servers[serverId] = {};
+  }
+
+  servers[serverId].realIP = ip;
+  servers[serverId].secureId = secureId;
+  servers[serverId].status = "protected";
+
+  console.log("🛡️ SERVER LINKED:", servers[serverId]);
+
+  res.json({ secureId });
+});
 
 // ================== REGISTER SERVER ==================
 
