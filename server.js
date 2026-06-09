@@ -1,18 +1,15 @@
 const express = require("express");
 const cors = require("cors");
-const CLIENT_ID = "1509684454002659499";
-const CLIENT_SECRET = "Gfl1r7yoCl2AeWn8GgF1aYdi0aOFRsYS";
-const REDIRECT_URI = "https://aegis-backend-gwu4.onrender.com/auth/callback";
+
 const app = express();
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
-
 
 app.use(cors());
 app.use(express.json());
 
 console.log("Conclave AegisAC Backend Loaded");
 
-// ================== STORAGE LET ==================
+// ================== STORAGE ==================
 
 let heartbeats = {};
 let webhooks = {};
@@ -28,29 +25,22 @@ let frames = {};
 let sessions = {};
 let linkedServers = {};
 
-// ================== HEARTBEATS ==================
+// ================== HEARTBEAT ==================
 
 app.post("/heartbeat", (req, res) => {
   const { serverId } = req.body;
 
-  heartbeats[serverId] = Date.now();
+  if (!serverId) return res.sendStatus(400);
 
+  heartbeats[serverId] = Date.now();
   res.sendStatus(200);
+  console.log("💓 Heartbeat:", serverId);
 });
 
 app.get("/status", (req, res) => {
-  const { id } = req.query; // secureId
+  const { id } = req.query; // id = serverId
 
-  const entry = Object.entries(servers).find(
-    ([, s]) => s.secureId === id
-  );
-
-  if (!entry) {
-    return res.json({ status: "disconnected" });
-  }
-
-  const [serverId] = entry;
-  const last = heartbeats[serverId];
+  const last = heartbeats[id];
 
   if (!last) {
     return res.json({ status: "disconnected" });
@@ -58,7 +48,7 @@ app.get("/status", (req, res) => {
 
   const diff = Date.now() - last;
 
-  if (diff > 10000) {
+  if (diff > 5000) {
     return res.json({ status: "disconnected" });
   }
 
@@ -68,13 +58,15 @@ app.get("/status", (req, res) => {
 // ================== ROOT ==================
 
 app.get("/", (req, res) => {
-  res.send("Conclave AegisAC Backend Running");
+  res.send("Aegis Backend Running");
 });
 
 // ================== PLAYERS ==================
 
 app.post("/player-event", (req, res) => {
-  const { serverId, name, uuid, action, ip, discord, license } = req.body;
+  const { serverId, name, uuid, action, ip, license } = req.body;
+
+  if (!serverId || !name) return res.sendStatus(400);
 
   if (!servers[serverId]) {
     servers[serverId] = { players: [] };
@@ -93,12 +85,12 @@ app.post("/player-event", (req, res) => {
       status: "ONLINE"
     });
 
-    console.log(`🟢 [${serverId}] JOIN:`, name);
+    console.log(`🟢 JOIN: ${name}`);
   }
 
   if (action === "LEAVE") {
     server.players = server.players.filter(p => p.name !== name);
-    console.log(`🔴 [${serverId}] LEAVE:`, name);
+    console.log(`🔴 LEAVE: ${name}`);
   }
 
   res.sendStatus(200);
@@ -107,9 +99,7 @@ app.post("/player-event", (req, res) => {
 app.get("/players", (req, res) => {
   const { serverId } = req.query;
 
-  if (!serverId || !servers[serverId]) {
-    return res.json([]);
-  }
+  if (!servers[serverId]) return res.json([]);
 
   res.json(
     servers[serverId].players.map(p => ({
@@ -119,16 +109,10 @@ app.get("/players", (req, res) => {
   );
 });
 
-
-// ================== PANEL ==================
-
-
-
 // ================== LOGS ==================
 
 app.post("/log", (req, res) => {
   logs.push(req.body);
-  console.log("📜 LOG:", req.body);
   res.sendStatus(200);
 });
 
@@ -139,34 +123,25 @@ app.get("/logs", (req, res) => {
 // ================== DETECTIONS ==================
 
 app.post("/detection", async (req, res) => {
+  const { player, check, vl, serverId } = req.body;
 
   detections.push(req.body);
 
-  const { player, check, vl, serverId } = req.body;
-
-  console.log("🚨 DETECTION:", req.body);
+  console.log("🚨 DETECTION:", player);
 
   await sendDiscordAlert(
     serverId,
-    `🚨 CHEAT DETECTED
-Player: ${player}
-Check: ${check}
-VL: ${vl}`
+    `🚨 CHEAT DETECTED\nPlayer: ${player}\nCheck: ${check}\nVL: ${vl}`
   );
-console.log(`📡 Alert sent for server ${serverId}`);
+
   res.sendStatus(200);
 });
 
 // ================== ALERTS ==================
 
 app.post("/alert", (req, res) => {
-  const { player, type, vl, severity } = req.body;
-
-  const alert = { player, type, vl, severity, time: Date.now() };
+  const alert = { ...req.body, time: Date.now() };
   alerts.push(alert);
-
-  console.log("⚠️ ALERT:", alert);
-
   res.sendStatus(200);
 });
 
@@ -174,161 +149,41 @@ app.get("/alerts", (req, res) => {
   res.json(alerts);
 });
 
-async function sendDiscordAlert(serverId, message) {
+// ================== WEBHOOK ==================
 
+async function sendDiscordAlert(serverId, message) {
   const webhook = webhooks[serverId];
   if (!webhook) return;
 
   try {
     await fetch(webhook, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        content: message
-      })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: message })
     });
   } catch (err) {
     console.error("Webhook error:", err);
   }
 }
 
-// ================== ACTIONS ==================
+app.post("/set-webhook", (req, res) => {
+  const { serverId, webhook } = req.body;
 
-app.post("/action", (req, res) => {
-  lastAction = req.body;
-  console.log("🎯 ACTION:", lastAction);
-  res.sendStatus(200);
-});
-
-app.get("/action", (req, res) => {
-  res.json(lastAction);
-  lastAction = {};
-});
-
-// ================== BANS ==================
-
-app.post("/ban", (req, res) => {
-  const { name, uuid } = req.body;
-
-  const ban = { name, uuid, date: Date.now() };
-  bans.push(ban);
-
-  console.log("⛔ BAN:", ban);
-
-  res.sendStatus(200);
-});
-
-app.get("/bans", (req, res) => {
-  res.json(bans);
-});
-
-// ================== MOVEMENT ==================
-
-app.post("/movement", (req, res) => {
-  const { name, x, y, z, yaw, pitch } = req.body;
-  movements[name] = { x, y, z, yaw, pitch, time: Date.now() };
-  res.sendStatus(200);
-});
-
-app.get("/movement", (req, res) => {
-  res.json(movements);
-});
-
-// ================== SCREEN CAPTURE ==================
-
-let lastLog = 0;
-
-app.post("/frame", (req, res) => {
-
-  const serverId = req.query.serverId;
-
-  if (!serverId) {
-    return res.sendStatus(400);
+  if (!webhook || !webhook.startsWith("https://discord.com/api/webhooks/")) {
+    return res.status(400).send("Invalid webhook");
   }
 
-  let data = [];
-
-  req.on("data", chunk => data.push(chunk));
-
-  req.on("end", () => {
-
-    if (Date.now() - lastLog > 10000) {
-      console.log("📸 FRAME RECEIVED");
-      lastLog = Date.now();
-    }
-
-    frames[serverId] = Buffer.concat(data);
-    res.sendStatus(200);
-  });
-
+  webhooks[serverId] = webhook;
+  res.sendStatus(200);
 });
 
-// ================== DISCORD LINK SYSTEM ==================
+// ================== LINK SYSTEM (FIX PRINCIPAL) ==================
 
 app.post("/link-server", (req, res) => {
   const { serverId, ip } = req.body;
 
-  const secureId = "aegis-" + Math.random().toString(36).substring(2, 10);
-
-  if (!servers[serverId]) {
-    servers[serverId] = {};
-  }
-
-  servers[serverId].realIP = ip;
-  servers[serverId].secureId = secureId;
-  servers[serverId].status = "protected";
-
-  console.log("🛡️ SERVER LINKED:", servers[serverId]);
-
-  res.json({ secureId });
-});
-
-// ================== REGISTER SERVER ==================
-
-app.post("/register-server", (req, res) => {
-  const { serverId, name } = req.body;
-
-  if (!servers[serverId]) {
-    servers[serverId] = {
-      name,
-      players: []
-    };
-  }
-
-  console.log("🧠 Registered server:", name, serverId);
-
-  res.sendStatus(200);
-});
-
-app.post("/register-server-ip", (req, res) => {
- 
-  if (!ip || ip.length < 3) {
-  return res.status(400).json({ error: "Invalid IP" });
-}
-
-  servers[serverId] = {
-  ...servers[serverId],
-  realIP: ip,
-  secureId,
-  status: "protected"
-};
-
-  servers[serverId].realIP = ip;
-  servers[serverId].port = port;
-  servers[serverId].proxy = "YOUR_VPS_IP:25565";
-
-  console.log("🌐 Server IP registrada:", servers[serverId]);
-
-  res.sendStatus(200);
-});
-
-app.post("/register-protection", (req, res) => {
-  const { serverId, ip } = req.body;
-
-  if (!ip || ip.length < 3) {
-    return res.status(400).json({ error: "Invalid IP" });
+  if (!serverId || !ip) {
+    return res.status(400).json({ error: "Missing serverId or IP" });
   }
 
   const secureId = "aegis-" + Math.random().toString(36).substring(2, 10);
@@ -340,75 +195,77 @@ app.post("/register-protection", (req, res) => {
     status: "protected"
   };
 
-  console.log("🛡️ Server protegido:", servers[serverId]);
+  linkedServers[serverId] = true;
+
+  console.log("🛡️ LINKED:", serverId);
 
   res.json({ secureId });
 });
 
-// ================== VALIDATIONS ==================
-
-app.get("/validate", (req, res) => {
-  const { session, serverId } = req.query;
-
-  if (!sessions[session]) {
-    return res.status(401).json({ error: "Not logged in" });
-  }
-
-  const user = sessions[session];
-
-  if (!user.guilds.includes(serverId)) {
-    return res.status(403).json({ error: "No access to this server" });
-  }
-
-  res.json({ success: true, user });
-});
-
-// ================== WEBHOOKS ==================
-
-app.post("/set-webhook", (req, res) => {
-  const { serverId, webhook } = req.body;
-
-  if (!webhook.startsWith("https://discord.com/api/webhooks/")) {
-    return res.status(400).send("Invalid webhook");
-  }
-
-  webhooks[serverId] = webhook; 
-
-  console.log("🔗 Webhook guardado para", serverId);
-
-  res.sendStatus(200);
-});
-
-// ================== PROXY ==================
-
-app.get("/get-proxy", (req, res) => {
-  const { serverId } = req.query;
-
-  if (!servers[serverId]) {
-    return res.status(404).send("No server");
-  }
-
-  res.json({
-    proxy: servers[serverId].proxy || "Not assigned yet"
-  });
-});
+// ================== GET SERVER ==================
 
 app.get("/get-server", (req, res) => {
   const { serverId } = req.query;
 
   if (!servers[serverId]) {
-    return res.status(404).send("Not found");
+    return res.status(404).json({ error: "Not found" });
   }
 
   res.json(servers[serverId]);
 });
 
+// ================== AUTO REGISTER/PROXYS ==================
+
+app.post("/auto-register", (req, res) => {
+  const { serverName, ip, port } = req.body;
+
+  const serverId = "srv-" + Math.random().toString(36).substring(2, 10);
+
+  servers[serverId] = {
+    name: serverName,
+    realIP: ip,
+    port,
+    status: "active"
+  };
+
+  console.log("⚡ AUTO REGISTER:", serverId);
+
+  res.json({ serverId });
+});
+
+app.post("/assign-proxy", (req, res) => {
+  const { serverId } = req.body;
+
+  const proxy = proxies.find(p => !p.busy);
+
+  if (!proxy) {
+    return res.status(503).json({ error: "No proxies available" });
+  }
+
+  proxy.busy = true;
+
+  servers[serverId].proxy = proxy.ip;
+
+  console.log("🌐 PROXY ASSIGNED:", proxy.ip);
+
+  res.json({ proxy: proxy.ip });
+});
+
+// ================== PANEL ==================
+
+const res = await fetch(`/get-server?serverId=${id}`);
+const data = await res.json();
+
+interaction.reply(`
+🛡️ Server Protected
+
+🔗 Connect: ${data.proxy}
+`);
+
 // ================== START ==================
 
 app.listen(3000, () => {
-  console.log("🚀 Server running on port 3000");
+  console.log("🚀 Running on port 3000");
 });
-
-// ================== BOTS ==================
 
 require("./bot");
