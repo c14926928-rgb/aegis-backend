@@ -153,7 +153,7 @@ if (interaction.commandName === "panel") {
       });
     }
 
-    const url = `https://conclaveaegisac.netlify.app/?id=${serverId}`;
+    const url = `https://conclaveaegisac.netlify.app/?id=${interaction.guild.id}`;
 
     interaction.reply({
       content: `🌐 Open Panel:\n${url}`,
