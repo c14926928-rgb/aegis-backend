@@ -32,7 +32,8 @@ function App() {
         fetch(`https://aegis-backend-gwu4.onrender.com/players?serverId=${serverId}`),
         fetch(`https://aegis-backend-gwu4.onrender.com/alerts?serverId=${serverId}`),
         fetch(`https://aegis-backend-gwu4.onrender.com/bans?serverId=${serverId}`),
-        fetch(`https://aegis-backend-gwu4.onrender.com/movement?serverId=${serverId}`)
+        fetch(`https://aegis-backend-gwu4.onrender.com/movement?serverId=${serverId}`),
+        fetch(`https://aegis-backend-gwu4.onrender.com/status?id=${id}`)
       ]);
 
       setLogs(await logsRes.json());
