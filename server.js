@@ -157,6 +157,40 @@ app.get("/alerts", (req, res) => {
   res.json(alerts);
 });
 
+// ================== ACTION SYSTEM ==================
+
+app.post("/action", (req, res) => {
+  const { type, player } = req.body;
+
+  if (!type || !player) {
+    return res.status(400).json({ error: "Missing data" });
+  }
+
+  lastAction = {
+    type,
+    player,
+    time: Date.now()
+  };
+
+  console.log("🎯 ACTION SET:", lastAction);
+
+  res.sendStatus(200);
+});
+
+app.get("/action", (req, res) => {
+
+  if (!lastAction || Object.keys(lastAction).length === 0) {
+    return res.json({ action: null }); // 🔥 NO ERROR
+  }
+
+  const action = lastAction;
+
+  // limpiar después de leer
+  lastAction = {};
+
+  res.json({ action });
+});
+
 // ================== WEBHOOK ==================
 
 async function sendDiscordAlert(serverId, message) {
@@ -258,9 +292,6 @@ app.post("/assign-proxy", (req, res) => {
 
   res.json({ proxy: proxy.ip });
 });
-
-// ================== PANEL ==================
-
 
 // ================== START ==================
 
