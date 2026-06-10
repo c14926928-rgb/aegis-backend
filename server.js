@@ -24,27 +24,35 @@ let linkedAccounts = {};
 let frames = {};
 let sessions = {};
 let linkedServers = {};
-
+let proxies = [
+  { ip: "127.0.0.1:25565", busy: false }
+];
 // ================== HEARTBEAT ==================
 
 app.post("/heartbeat", (req, res) => {
-  const { serverId } = req.body;
+  let { serverId } = req.body;
 
   if (!serverId) return res.sendStatus(400);
 
+  serverId = serverId.trim();
+
   heartbeats[serverId] = Date.now();
-  res.sendStatus(200);
+
   console.log("💓 Heartbeat:", serverId);
+
+  res.sendStatus(200);
 });
 
 app.get("/status", (req, res) => {
-  const { id } = req.query; // id = serverId
+  let { id } = req.query;
+
+  if (!id) return res.json({ status: "disconnected" });
+
+  id = id.trim();
 
   const last = heartbeats[id];
 
-  if (!last) {
-    return res.json({ status: "disconnected" });
-  }
+  if (!last) return res.json({ status: "disconnected" });
 
   const diff = Date.now() - last;
 
@@ -253,14 +261,6 @@ app.post("/assign-proxy", (req, res) => {
 
 // ================== PANEL ==================
 
-const res = await fetch(`/get-server?serverId=${id}`);
-const data = await res.json();
-
-interaction.reply(`
-🛡️ Server Protected
-
-🔗 Connect: ${data.proxy}
-`);
 
 // ================== START ==================
 

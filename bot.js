@@ -102,38 +102,17 @@ client.on("interactionCreate", async (interaction) => {
   
   // ===== PANEL (FIXED) =====
 
-  if (interaction.commandName === "panel") {
+ if (interaction.commandName === "panel") {
 
-    try {
-      const res = await fetch(`https://aegis-backend-gwu4.onrender.com/get-proxy?serverId=${interaction.guild.id}`);
-      const data = await res.json();
+  const serverId = interaction.options.getString("id");
 
-      const embed = new EmbedBuilder()
-        .setTitle("🛡️ Protected Server")
-        .setDescription(`IP: ${data.proxy || "Not assigned yet"}`)
-        .setColor(0x6c5ce7);
+  const url = `https://TU-WEB.netlify.app/?id=${serverId}`;
 
-      const button = new ButtonBuilder()
-        .setLabel("Open Dashboard")
-        .setStyle(ButtonStyle.Link)
-        .setURL(`https://fascinating-pastelito-b15e07.netlify.app/?server=${interaction.guild.id}`);
-
-      const row = new ActionRowBuilder().addComponents(button);
-
-      return interaction.reply({
-        embeds: [embed],
-        components: [row],
-        flags: 64
-      });
-
-    } catch (err) {
-      console.error(err);
-      return interaction.reply({
-        content: "❌ Failed to fetch proxy",
-        flags: 64
-      });
-    }
-  }
+  interaction.reply({
+    content: `🌐 Open Panel:\n${url}`,
+    flags: 64
+  });
+}
 
  // ===== LINK =====
  
@@ -141,10 +120,7 @@ if (interaction.commandName === "link") {
 
   const ip = interaction.options.getString("ip");
 
-  await interaction.reply({
-    content: "🔄 Linking server...",
-    ephemeral: true
-  });
+  const serverId = "srv-" + Math.random().toString(36).substring(2, 8);
 
   try {
 
@@ -154,29 +130,31 @@ if (interaction.commandName === "link") {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        serverId: interaction.guild.id,
+        serverId,
         ip
       })
     });
 
     const data = await res.json();
 
-    return interaction.editReply({
-      content:
-`🛡️ Server Linked & Protected
+    await interaction.reply({
+      content: `
+🛡️ Server Linked
 
-🔒 Secure ID: ${data.secureId}
+📡 IP: ${ip}
+🆔 Server ID: ${serverId}
 
-⚠️ Do NOT share your real IP`,
-      ephemeral: true
+👉 Usa este ID en tu mod
+`,
+      flags: 64
     });
 
   } catch (err) {
     console.error(err);
 
-    return interaction.editReply({
+    interaction.reply({
       content: "❌ Failed to link server",
-      ephemeral: true
+      flags: 64
     });
   }
 }

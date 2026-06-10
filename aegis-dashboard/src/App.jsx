@@ -143,33 +143,28 @@ if (authorized === false) {
 }, [tab]);
 
 useEffect(() => {
-
   const params = new URLSearchParams(window.location.search);
+  const id = params.get("id");
 
-  const sessionParam = params.get("session");
-  const serverParam = params.get("id");
-  
-  if (!sessionParam || !serverParam) {
-    setAuthorized(false);
-    return;
+  if (id) {
+    setServerId(id);
   }
-
-  setSession(sessionParam);
-  setServerId(serverParam);
-
-  fetch(`https://aegis-backend-gwu4.onrender.com/validate?session=${sessionParam}&serverId=${serverParam}`)
-    .then(res => {
-      if (!res.ok) throw new Error();
-      return res.json();
-    })
-    .then(() => {
-      setAuthorized(true);
-    })
-    .catch(() => {
-      setAuthorized(false);
-    });
-
 }, []);
+
+useEffect(() => {
+  if (!serverId) return;
+
+  fetchData();
+  fetchStatus();
+
+  const i = setInterval(() => {
+    fetchData();
+    fetchStatus();
+  }, 3000);
+
+  return () => clearInterval(i);
+}, [serverId]);
+
 
   return (
 
