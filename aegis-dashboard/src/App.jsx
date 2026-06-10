@@ -165,6 +165,17 @@ useEffect(() => {
   return () => clearInterval(i);
 }, [serverId]);
 
+useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get("id");
+
+  if (id) {
+    console.log("🆔 Server ID:", id);
+    setServerId(id);
+  } else {
+    console.log("❌ No ID in URL");
+  }
+}, []);
 
   return (
 
