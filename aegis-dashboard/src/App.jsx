@@ -33,7 +33,7 @@ function App() {
         fetch(`https://aegis-backend-gwu4.onrender.com/alerts?serverId=${serverId}`),
         fetch(`https://aegis-backend-gwu4.onrender.com/bans?serverId=${serverId}`),
         fetch(`https://aegis-backend-gwu4.onrender.com/movement?serverId=${serverId}`),
-        fetch(`https://aegis-backend-gwu4.onrender.com/status?id=${id}`)
+        fetch(`https://aegis-backend-gwu4.onrender.com/status?id=${serverId}`)
       ]);
 
       setLogs(await logsRes.json());
@@ -48,17 +48,25 @@ function App() {
     }
   };
 
-  const fetchStatus = async () => {
+ const fetchStatus = async () => {
   try {
-    const res = await fetch(`https://aegis-backend-gwu4.onrender.com/status?id=${serverId}`);
+    const res = await fetch(
+      `https://aegis-backend-gwu4.onrender.com/status?id=${serverId}`
+    );
+
     const data = await res.json();
+
     setStatus(data.status);
+
   } catch (err) {
     console.error("STATUS ERROR:", err);
+    console.log("ID:", id);
   }
 };
 
-  useEffect(() => {
+ useEffect(() => {
+  if (!serverId) return; 
+
   fetchData();
   fetchStatus();
 
@@ -142,15 +150,6 @@ if (authorized === false) {
 }
 
 }, [tab]);
-
-useEffect(() => {
-  const params = new URLSearchParams(window.location.search);
-  const id = params.get("id");
-
-  if (id) {
-    setServerId(id);
-  }
-}, []);
 
 useEffect(() => {
   if (!serverId) return;
