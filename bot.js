@@ -4,6 +4,8 @@ const client = new Client({
   intents: [GatewayIntentBits.Guilds]
 });
 
+let lastServerId = null;
+
 //====== READY ======
 
 client.once("ready", async () => {
@@ -43,6 +45,9 @@ client.once("ready", async () => {
     ]
   }
 ];
+
+
+
 
   const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
 
@@ -99,53 +104,59 @@ client.on("interactionCreate", async (interaction) => {
       flags: 64
     });
   }
-  
-  // ===== PANEL (FIXED) =====
 
- if (interaction.commandName === "panel") {
+// ===== LINK =====
 
-  const serverId = interaction.options.getString("id");
-
-  const url = `https://TU-WEB.netlify.app/?id=${serverId}`;
-
-  interaction.reply({
-    content: `🌐 Open Panel:\n${url}`,
-    flags: 64
-  });
-}
-
- // ===== LINK =====
- 
 if (interaction.commandName === "link") {
 
   const ip = interaction.options.getString("ip");
 
-  const serverId = "srv-" + Math.random().toString(36).substring(2, 8);
+  const serverId = interaction.guild.id;
 
-  try {
+  lastServerId = serverId; 
+  
+  const res = await fetch("https://aegis-backend-gwu4.onrender.com/link-server", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ serverId, ip })
+  });
 
-    const res = await fetch("https://aegis-backend-gwu4.onrender.com/link-server", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        serverId,
-        ip
-      })
-    });
-
-    const data = await res.json();
-
-    await interaction.reply({
-      content: `
+  await interaction.reply({
+    content: `
 🛡️ Server Linked
 
 📡 IP: ${ip}
 🆔 Server ID: ${serverId}
-
-👉 Usa este ID en tu mod
 `,
+    flags: 64
+  });
+}
+
+// ===== PANEL =====
+
+if (interaction.commandName === "panel") {
+
+  try {
+
+    const res = await fetch(
+      `https://aegis-backend-gwu4.onrender.com/get-server?serverId=${interaction.guild.id}`
+    );
+
+    const data = await res.json();
+
+    if (!data || !data.secureId) {
+      return interaction.reply({
+        content: "❌ No server linked. Use /link first.",
+        flags: 64
+      });
+    }
+
+    const url = `https://tu-web.netlify.app/?id=${interaction.guild.id}`;
+
+    interaction.reply({
+      content: `🌐 Open Panel:\n${url}`,
       flags: 64
     });
 
@@ -153,7 +164,7 @@ if (interaction.commandName === "link") {
     console.error(err);
 
     interaction.reply({
-      content: "❌ Failed to link server",
+      content: "❌ Error opening panel",
       flags: 64
     });
   }
