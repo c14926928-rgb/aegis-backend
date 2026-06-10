@@ -1,53 +1,45 @@
-const { Client, GatewayIntentBits, REST, Routes, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require("discord.js");
+const { Client, GatewayIntentBits, REST, Routes, EmbedBuilder } = require("discord.js");
+
+// 🔥 FIX FETCH
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds]
 });
 
-let lastServerId = null;
-
-//====== READY ======
+// ================= READY =================
 
 client.once("ready", async () => {
   console.log(`🤖 Logged in as ${client.user.tag}`);
 
   const commands = [
-  {
-    name: "help",
-    description: "Show help menu"
-  },
-  {
-    name: "panel",
-    description: "Open dashboard"
-  },
-  {
-  name: "link",
-  description: "Protect your server",
-  options: [
+    { name: "help", description: "Show help menu" },
+    { name: "panel", description: "Open dashboard" },
     {
-      name: "ip",
-      type: 3,
-      description: "Server IP",
-      required: true
+      name: "link",
+      description: "Protect your server",
+      options: [
+        {
+          name: "ip",
+          type: 3,
+          description: "Server IP",
+          required: true
+        }
+      ]
+    },
+    {
+      name: "webhook",
+      description: "Set webhook",
+      options: [
+        {
+          name: "url",
+          type: 3,
+          description: "Webhook URL",
+          required: true
+        }
+      ]
     }
-  ]
-  },
-  {
-    name: "webhook",
-    description: "Set webhook",
-    options: [
-      {
-        name: "url",
-        type: 3,
-        description: "Webhook URL",
-        required: true
-      }
-    ]
-  }
-];
-
-
-
+  ];
 
   const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
 
@@ -62,117 +54,77 @@ client.once("ready", async () => {
   }
 });
 
-//====== AUTO REGISTER SERVER ======
-
-client.on("guildCreate", async (guild) => {
-  try {
-    await fetch("https://aegis-backend-gwu4.onrender.com/register-server", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        serverId: guild.id,
-        name: guild.name
-      })
-    });
-  } catch (err) {
-    console.error(err);
-  }
-});
-
-//====== COMMANDS ======
+// ================= COMMANDS =================
 
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
   // ===== HELP =====
- 
   if (interaction.commandName === "help") {
-
-    const embed = new EmbedBuilder()
-      .setTitle("🛡️ Conclave AegisAC • Anti-Cheat")
-      .setColor(0x6c5ce7)
-      .setDescription("Real-time anti-cheat system for Minecraft servers.")
-      .addFields(
-        { name: "📌 Commands", value: "/webhook\n/link\n/panel" },
-        { name: "⚙️ Setup", value: "1. /webhook\n2. /link\n3. /link CODE\n4. /panel" }
-      );
-
     return interaction.reply({
-      embeds: [embed],
+      embeds: [
+        new EmbedBuilder()
+          .setTitle("🛡️ Conclave AegisAC")
+          .setColor(0x6c5ce7)
+          .setDescription("Anti-cheat system")
+          .addFields(
+            { name: "Commands", value: "/link\n/panel\n/webhook" }
+          )
+      ],
       flags: 64
     });
   }
 
-// ===== LINK =====
+  // ===== LINK =====
+  if (interaction.commandName === "link") {
 
-if (interaction.commandName === "link") {
+    const ip = interaction.options.getString("ip");
+    const serverId = interaction.guild.id;
 
-  const ip = interaction.options.getString("ip");
+    try {
+      await fetch("https://aegis-backend-gwu4.onrender.com/link-server", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ serverId, ip })
+      });
 
-  const serverId = interaction.guild.id;
-
-  lastServerId = serverId; 
-  
-  const res = await fetch("https://aegis-backend-gwu4.onrender.com/link-server", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ serverId, ip })
-  });
-
-  await interaction.reply({
-    content: `
-🛡️ Server Linked
+      return interaction.reply({
+        content: `🛡️ Server Linked
 
 📡 IP: ${ip}
 🆔 Server ID: ${serverId}
-`,
-    flags: 64
-  });
-}
 
-// ===== PANEL =====
+👉 Put this ID in your mod config`,
+        flags: 64
+      });
 
-if (interaction.commandName === "panel") {
-
-  try {
-
-    const res = await fetch(
-      `https://aegis-backend-gwu4.onrender.com/get-server?serverId=${interaction.guild.id}`
-    );
-
-    const data = await res.json();
-
-    if (!data || !data.secureId) {
+    } catch (err) {
+      console.error(err);
       return interaction.reply({
-        content: "❌ No server linked. Use /link first.",
+        content: "❌ Error linking server",
         flags: 64
       });
     }
+  }
 
-    const url = `https://conclaveaegisac.netlify.app/?id=${interaction.guild.id}`;
+  // ===== PANEL =====
+  if (interaction.commandName === "panel") {
 
-    interaction.reply({
+    const serverId = interaction.guild.id;
+
+    const url = `https://conclaveaegisac.netlify.app/?id=${serverId}`;
+
+    return interaction.reply({
       content: `🌐 Open Panel:\n${url}`,
       flags: 64
     });
-
-  } catch (err) {
-    console.error(err);
-
-    interaction.reply({
-      content: "❌ Error opening panel",
-      flags: 64
-    });
   }
-}
 
   // ===== WEBHOOK =====
-
   if (interaction.commandName === "webhook") {
+
     const webhook = interaction.options.getString("url");
 
     if (!webhook.startsWith("https://discord.com/api/webhooks/")) {
@@ -209,6 +161,6 @@ if (interaction.commandName === "panel") {
   }
 });
 
-//====== LOGIN ======
+// ================= LOGIN =================
 
 client.login(process.env.TOKEN);

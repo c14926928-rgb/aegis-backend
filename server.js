@@ -14,10 +14,10 @@ console.log("Conclave AegisAC Backend Loaded");
 let heartbeats = {};
 let webhooks = {};
 let servers = {};
-let logs = [];
-let detections = [];
-let alerts = [];
-let bans = [];
+let logs = {};
+let detections = {};
+let alerts = {};
+let bans = {};
 let lastAction = {};
 let movements = {};
 let linkedAccounts = {};
@@ -27,6 +27,7 @@ let linkedServers = {};
 let proxies = [
   { ip: "127.0.0.1:25565", busy: false }
 ];
+
 // ================== HEARTBEAT ==================
 
 app.post("/heartbeat", (req, res) => {
@@ -120,41 +121,77 @@ app.get("/players", (req, res) => {
 // ================== LOGS ==================
 
 app.post("/log", (req, res) => {
-  logs.push(req.body);
+  const { serverId, message } = req.body;
+
+  if (!serverId) return res.sendStatus(400);
+
+  if (!logs[serverId]) logs[serverId] = [];
+
+  logs[serverId].push({ message, time: Date.now() });
+
   res.sendStatus(200);
 });
 
 app.get("/logs", (req, res) => {
-  res.json(logs);
+  const { serverId } = req.query;
+  res.json(logs[serverId] || []);
 });
 
 // ================== DETECTIONS ==================
 
-app.post("/detection", async (req, res) => {
-  const { player, check, vl, serverId } = req.body;
+app.post("/detection", (req, res) => {
+  const { serverId } = req.body;
 
-  detections.push(req.body);
+  if (!serverId) return res.sendStatus(400);
 
-  console.log("🚨 DETECTION:", player);
+  if (!detections[serverId]) detections[serverId] = [];
 
-  await sendDiscordAlert(
-    serverId,
-    `🚨 CHEAT DETECTED\nPlayer: ${player}\nCheck: ${check}\nVL: ${vl}`
-  );
+  detections[serverId].push(req.body);
 
   res.sendStatus(200);
+});
+
+app.get("/detections", (req, res) => {
+  const { serverId } = req.query;
+  res.json(detections[serverId] || []);
 });
 
 // ================== ALERTS ==================
 
 app.post("/alert", (req, res) => {
-  const alert = { ...req.body, time: Date.now() };
-  alerts.push(alert);
+  const { serverId } = req.body;
+
+  if (!serverId) return res.sendStatus(400);
+
+  if (!alerts[serverId]) alerts[serverId] = [];
+
+  alerts[serverId].push({ ...req.body, time: Date.now() });
+
   res.sendStatus(200);
 });
 
 app.get("/alerts", (req, res) => {
-  res.json(alerts);
+  const { serverId } = req.query;
+  res.json(alerts[serverId] || []);
+});
+
+// ================== BANS ==================
+
+app.post("/ban", (req, res) => {
+  const { serverId, name, uuid } = req.body;
+
+  if (!serverId) return res.sendStatus(400);
+
+  if (!bans[serverId]) bans[serverId] = [];
+
+  bans[serverId].push({ name, uuid, time: Date.now() });
+
+  res.sendStatus(200);
+});
+
+app.get("/bans", (req, res) => {
+  const { serverId } = req.query;
+  res.json(bans[serverId] || []);
 });
 
 // ================== ACTION SYSTEM ==================
