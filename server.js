@@ -134,7 +134,12 @@ app.post("/log", (req, res) => {
 
 app.get("/logs", (req, res) => {
   const { serverId } = req.query;
-  res.json(logs[serverId] || []);
+
+  if (!serverId) return res.json([]);
+
+  const filtered = logs.filter(l => l.serverId === serverId);
+
+  res.json(filtered);
 });
 
 // ================== DETECTIONS ==================
@@ -153,7 +158,12 @@ app.post("/detection", (req, res) => {
 
 app.get("/detections", (req, res) => {
   const { serverId } = req.query;
-  res.json(detections[serverId] || []);
+
+  if (!serverId) return res.json([]);
+
+  const filtered = detections.filter(d => d.serverId === serverId);
+
+  res.json(filtered);
 });
 
 // ================== ALERTS ==================
@@ -172,8 +182,9 @@ app.post("/alert", (req, res) => {
 
 app.get("/alerts", (req, res) => {
   const { serverId } = req.query;
-  res.json(alerts[serverId] || []);
+  res.json(alerts.filter(a => a.serverId === serverId));
 });
+
 
 // ================== BANS ==================
 
@@ -191,7 +202,7 @@ app.post("/ban", (req, res) => {
 
 app.get("/bans", (req, res) => {
   const { serverId } = req.query;
-  res.json(bans[serverId] || []);
+  res.json(bans.filter(b => b.serverId === serverId));
 });
 
 // ================== ACTION SYSTEM ==================
