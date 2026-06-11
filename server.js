@@ -207,6 +207,8 @@ app.get("/bans", (req, res) => {
 
 // ================== ACTION SYSTEM ==================
 
+let lastAction = null;
+
 app.post("/action", (req, res) => {
   const { type, player } = req.body;
 
@@ -222,19 +224,20 @@ app.post("/action", (req, res) => {
 
   console.log("🎯 ACTION SET:", lastAction);
 
-  res.sendStatus(200);
+  res.json({ success: true });
 });
 
+// 🔥 GET ACTION
 app.get("/action", (req, res) => {
 
-  if (!lastAction || Object.keys(lastAction).length === 0) {
-    return res.json({ action: "none" });
+  if (!lastAction) {
+    return res.json({ action: "none" }); // ✅ NUNCA NULL
   }
 
   const action = lastAction;
 
-  // limpiar después de leer
-  lastAction = {};
+  // limpiar después de enviar
+  lastAction = null;
 
   res.json({ action });
 });
