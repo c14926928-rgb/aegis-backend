@@ -18,12 +18,10 @@ let logs = {};
 let detections = {};
 let alerts = {};
 let bans = {};
-let lastAction = {};
-let movements = {};
+let actions = {};
 let linkedAccounts = {};
-let frames = {};
-let sessions = {};
 let linkedServers = {};
+
 let proxies = [
   { ip: "127.0.0.1:25565", busy: false }
 ];
@@ -35,33 +33,19 @@ app.post("/heartbeat", (req, res) => {
 
   if (!serverId) return res.sendStatus(400);
 
-  serverId = serverId.trim();
-
-  heartbeats[serverId] = Date.now();
-
-  console.log("💓 Heartbeat:", serverId);
-
+  heartbeats[serverId.trim()] = Date.now();
   res.sendStatus(200);
 });
 
 app.get("/status", (req, res) => {
   let { id } = req.query;
 
-  if (!id) return res.json({ status: "disconnected" });
-
-  id = id.trim();
-
-  const last = heartbeats[id];
-
-  if (!last) return res.json({ status: "disconnected" });
-
-  const diff = Date.now() - last;
-
-  if (diff > 5000) {
+  if (!id || !heartbeats[id]) {
     return res.json({ status: "disconnected" });
   }
 
-  res.json({ status: "connected" });
+  const diff = Date.now() - heartbeats[id];
+  res.json({ status: diff > 5000 ? "disconnected" : "connected" });
 });
 
 // ================== ROOT ==================
@@ -85,7 +69,6 @@ app.post("/player-event", (req, res) => {
 
   if (action === "JOIN") {
     server.players = server.players.filter(p => p.name !== name);
-
     server.players.push({
       name,
       uuid,
@@ -93,13 +76,10 @@ app.post("/player-event", (req, res) => {
       license: license || "N/A",
       status: "ONLINE"
     });
-
-    console.log(`🟢 JOIN: ${name}`);
   }
 
   if (action === "LEAVE") {
     server.players = server.players.filter(p => p.name !== name);
-    console.log(`🔴 LEAVE: ${name}`);
   }
 
   res.sendStatus(200);
@@ -123,11 +103,14 @@ app.get("/players", (req, res) => {
 app.post("/log", (req, res) => {
   const { serverId, message } = req.body;
 
-  if (!serverId) return res.sendStatus(400);
+  if (!serverId || !message) return res.sendStatus(400);
 
   if (!logs[serverId]) logs[serverId] = [];
 
-  logs[serverId].push({ message, time: Date.now() });
+  logs[serverId].unshift({
+    message,
+    time: Date.now()
+  });
 
   res.sendStatus(200);
 });
@@ -135,129 +118,83 @@ app.post("/log", (req, res) => {
 app.get("/logs", (req, res) => {
   const { serverId } = req.query;
 
-  if (!serverId) return res.json([]);
+  if (!serverId || !logs[serverId]) {
+    return res.json([]);
+  }
 
-  const filtered = logs.filter(l => l.serverId === serverId);
-
-  res.json(filtered);
+  res.json(logs[serverId]);
 });
 
 // ================== DETECTIONS ==================
 
-app.post("/detection", (req, res) => {
-  const { serverId } = req.body;
-
-  if (!serverId) return res.sendStatus(400);
-
-  if (!detections[serverId]) detections[serverId] = [];
-
-  detections[serverId].push(req.body);
-
-  res.sendStatus(200);
-});
-
 app.get("/detections", (req, res) => {
   const { serverId } = req.query;
 
-  if (!serverId) return res.json([]);
+  if (!serverId || !detections[serverId]) {
+    return res.json([]);
+  }
 
-  const filtered = detections.filter(d => d.serverId === serverId);
-
-  res.json(filtered);
+  res.json(detections[serverId]);
 });
 
 // ================== ALERTS ==================
 
-app.post("/alert", (req, res) => {
-  const { serverId } = req.body;
-
-  if (!serverId) return res.sendStatus(400);
-
-  if (!alerts[serverId]) alerts[serverId] = [];
-
-  alerts[serverId].push({ ...req.body, time: Date.now() });
-
-  res.sendStatus(200);
-});
-
 app.get("/alerts", (req, res) => {
   const { serverId } = req.query;
-  res.json(alerts.filter(a => a.serverId === serverId));
-});
 
+  if (!serverId || !alerts[serverId]) {
+    return res.json([]);
+  }
+
+  res.json(alerts[serverId]);
+});
 
 // ================== BANS ==================
 
-app.post("/ban", (req, res) => {
-  const { serverId, name, uuid } = req.body;
-
-  if (!serverId) return res.sendStatus(400);
-
-  if (!bans[serverId]) bans[serverId] = [];
-
-  bans[serverId].push({ name, uuid, time: Date.now() });
-
-  res.sendStatus(200);
-});
-
 app.get("/bans", (req, res) => {
   const { serverId } = req.query;
-  res.json(bans.filter(b => b.serverId === serverId));
+
+  if (!serverId || !bans[serverId]) {
+    return res.json([]);
+  }
+
+  res.json(bans[serverId]);
 });
 
 // ================== ACTION SYSTEM ==================
 
-let lastAction = null;
-
 app.post("/action", (req, res) => {
-  const { type, player } = req.body;
+  const { type, player, serverId } = req.body;
 
-  if (!type || !player) {
+  if (!type || !player || !serverId) {
     return res.status(400).json({ error: "Missing data" });
   }
 
-  lastAction = {
+  actions[serverId] = {
     type,
     player,
     time: Date.now()
   };
 
-  console.log("🎯 ACTION SET:", lastAction);
+  console.log("🎯 ACTION SET:", actions[serverId]);
 
   res.json({ success: true });
 });
 
-// 🔥 GET ACTION
 app.get("/action", (req, res) => {
+  const { serverId } = req.query;
 
-  if (!lastAction) {
-    return res.json({ action: "none" }); // ✅ NUNCA NULL
+  if (!serverId || !actions[serverId]) {
+    return res.json({ action: null });
   }
 
-  const action = lastAction;
-
-  // limpiar después de enviar
-  lastAction = null;
+  const action = actions[serverId];
+  delete actions[serverId];
 
   res.json({ action });
 });
 
 // ================== WEBHOOK ==================
-
-async function sendDiscordAlert(serverId, message) {
-  const webhook = webhooks[serverId];
-  if (!webhook) return;
-
-  try {
-    await fetch(webhook, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: message })
-    });
-  } catch (err) {
-    console.error("Webhook error:", err);
-  }
-}
 
 app.post("/set-webhook", (req, res) => {
   const { serverId, webhook } = req.body;
@@ -270,7 +207,7 @@ app.post("/set-webhook", (req, res) => {
   res.sendStatus(200);
 });
 
-// ================== LINK SYSTEM (FIX PRINCIPAL) ==================
+// ================== LINK SYSTEM ==================
 
 app.post("/link-server", (req, res) => {
   const { serverId, ip } = req.body;
@@ -290,41 +227,10 @@ app.post("/link-server", (req, res) => {
 
   linkedServers[serverId] = true;
 
-  console.log("🛡️ LINKED:", serverId);
-
   res.json({ secureId });
 });
 
-// ================== GET SERVER ==================
-
-app.get("/get-server", (req, res) => {
-  const { serverId } = req.query;
-
-  if (!servers[serverId]) {
-    return res.status(404).json({ error: "Not found" });
-  }
-
-  res.json(servers[serverId]);
-});
-
-// ================== AUTO REGISTER/PROXYS ==================
-
-app.post("/auto-register", (req, res) => {
-  const { serverName, ip, port } = req.body;
-
-  const serverId = "srv-" + Math.random().toString(36).substring(2, 10);
-
-  servers[serverId] = {
-    name: serverName,
-    realIP: ip,
-    port,
-    status: "active"
-  };
-
-  console.log("⚡ AUTO REGISTER:", serverId);
-
-  res.json({ serverId });
-});
+// ================== PROXY ==================
 
 app.post("/assign-proxy", (req, res) => {
   const { serverId } = req.body;
@@ -339,8 +245,6 @@ app.post("/assign-proxy", (req, res) => {
 
   servers[serverId].proxy = proxy.ip;
 
-  console.log("🌐 PROXY ASSIGNED:", proxy.ip);
-
   res.json({ proxy: proxy.ip });
 });
 
@@ -350,4 +254,5 @@ app.listen(3000, () => {
   console.log("🚀 Running on port 3000");
 });
 
-require("./bot");
+// ⚠️ opcional (si rompe, comenta esto)
+// require("./bot");
