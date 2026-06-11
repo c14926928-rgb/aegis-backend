@@ -228,7 +228,7 @@ app.post("/action", (req, res) => {
 app.get("/action", (req, res) => {
 
   if (!lastAction || Object.keys(lastAction).length === 0) {
-    return res.json({ action: null }); // 🔥 NO ERROR
+    return res.json({ action: "none" });
   }
 
   const action = lastAction;
