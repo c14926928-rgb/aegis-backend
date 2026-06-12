@@ -182,18 +182,23 @@ app.post("/action", (req, res) => {
 });
 
 app.get("/action", (req, res) => {
-  const { serverId } = req.query;
+  try {
+    const { serverId } = req.query;
 
-  if (!serverId || !actions[serverId]) {
-    return res.json({ action: null });
+    if (!serverId || !actions[serverId]) {
+      return res.json({ action: "none" });
+    }
+
+    const action = actions[serverId];
+    delete actions[serverId];
+
+    res.json({ action });
+
+  } catch (err) {
+    console.error("ACTION ERROR:", err);
+    res.status(500).json({ action: "none" });
   }
-
-  const action = actions[serverId];
-  delete actions[serverId];
-
-  res.json({ action });
 });
-
 // ================== WEBHOOK ==================
 
 app.post("/set-webhook", (req, res) => {
@@ -254,5 +259,5 @@ app.listen(3000, () => {
   console.log("🚀 Running on port 3000");
 });
 
-// ⚠️ opcional (si rompe, comenta esto)
-// require("./bot");
+
+require("./bot");
