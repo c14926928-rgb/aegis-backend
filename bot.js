@@ -1,6 +1,17 @@
 const { Client, GatewayIntentBits, REST, Routes, EmbedBuilder } = require("discord.js");
 
-// 🔥 FIX FETCH
+// ===== ENV CHECK =====
+if (!process.env.TOKEN) {
+  console.error("❌ TOKEN missing in ENV");
+  process.exit(1);
+}
+
+if (!process.env.CLIENT_ID) {
+  console.error("❌ CLIENT_ID missing in ENV");
+  process.exit(1);
+}
+
+// 🔥 FETCH FIX
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
 const client = new Client({
@@ -44,13 +55,20 @@ client.once("ready", async () => {
   const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
 
   try {
+
+    // ⚡ INSTANT COMMANDS (DEV MODE)
     await rest.put(
-      Routes.applicationCommands(process.env.CLIENT_ID),
+      Routes.applicationGuildCommands(
+        process.env.CLIENT_ID,
+        process.env.GUILD_ID // 👈 IMPORTANTE
+      ),
       { body: commands }
     );
-    console.log("✅ Slash commands registered");
+
+    console.log("✅ Commands registered instantly (guild)");
+
   } catch (err) {
-    console.error(err);
+    console.error("❌ Command register error:", err);
   }
 });
 
@@ -59,29 +77,28 @@ client.once("ready", async () => {
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
-  // ===== HELP =====
-  if (interaction.commandName === "help") {
-    return interaction.reply({
-      embeds: [
-        new EmbedBuilder()
-          .setTitle("🛡️ Conclave AegisAC")
-          .setColor(0x6c5ce7)
-          .setDescription("Anti-cheat system")
-          .addFields(
-            { name: "Commands", value: "/link\n/panel\n/webhook" }
-          )
-      ],
-      flags: 64
-    });
-  }
+  try {
 
-  // ===== LINK =====
-  if (interaction.commandName === "link") {
+    // ===== HELP =====
+    if (interaction.commandName === "help") {
+      return interaction.reply({
+        embeds: [
+          new EmbedBuilder()
+            .setTitle("🛡️ Conclave AegisAC")
+            .setColor(0x6c5ce7)
+            .setDescription("Anti-cheat system")
+            .addFields({ name: "Commands", value: "/link\n/panel\n/webhook" })
+        ],
+        ephemeral: true
+      });
+    }
 
-    const ip = interaction.options.getString("ip");
-    const serverId = interaction.guild.id;
+    // ===== LINK =====
+    if (interaction.commandName === "link") {
 
-    try {
+      const ip = interaction.options.getString("ip");
+      const serverId = interaction.guild.id;
+
       await fetch("https://aegis-backend-gwu4.onrender.com/link-server", {
         method: "POST",
         headers: {
@@ -91,50 +108,35 @@ client.on("interactionCreate", async (interaction) => {
       });
 
       return interaction.reply({
-        content: `🛡️ Server Linked
-
-📡 IP: ${ip}
-🆔 Server ID: ${serverId}
-
-👉 Put this ID in your mod config`,
-        flags: 64
-      });
-
-    } catch (err) {
-      console.error(err);
-      return interaction.reply({
-        content: "❌ Error linking server",
-        flags: 64
-      });
-    }
-  }
-
-  // ===== PANEL =====
-  if (interaction.commandName === "panel") {
-
-    const serverId = interaction.guild.id;
-
-    const url = `https://conclaveaegisac.netlify.app/?id=${serverId}`;
-
-    return interaction.reply({
-      content: `🌐 Open Panel:\n${url}`,
-      flags: 64
-    });
-  }
-
-  // ===== WEBHOOK =====
-  if (interaction.commandName === "webhook") {
-
-    const webhook = interaction.options.getString("url");
-
-    if (!webhook.startsWith("https://discord.com/api/webhooks/")) {
-      return interaction.reply({
-        content: "❌ Invalid webhook",
-        flags: 64
+        content: `🛡️ Server Linked\n\n📡 IP: ${ip}\n🆔 ID: ${serverId}`,
+        ephemeral: true
       });
     }
 
-    try {
+    // ===== PANEL =====
+    if (interaction.commandName === "panel") {
+
+      const serverId = interaction.guild.id;
+      const url = `https://conclaveaegisac.netlify.app/?id=${serverId}`;
+
+      return interaction.reply({
+        content: `🌐 Panel:\n${url}`,
+        ephemeral: true
+      });
+    }
+
+    // ===== WEBHOOK =====
+    if (interaction.commandName === "webhook") {
+
+      const webhook = interaction.options.getString("url");
+
+      if (!webhook.startsWith("https://discord.com/api/webhooks/")) {
+        return interaction.reply({
+          content: "❌ Invalid webhook",
+          ephemeral: true
+        });
+      }
+
       await fetch("https://aegis-backend-gwu4.onrender.com/set-webhook", {
         method: "POST",
         headers: {
@@ -148,14 +150,17 @@ client.on("interactionCreate", async (interaction) => {
 
       return interaction.reply({
         content: "✅ Webhook configured",
-        flags: 64
+        ephemeral: true
       });
+    }
 
-    } catch (err) {
-      console.error(err);
-      return interaction.reply({
-        content: "❌ Error saving webhook",
-        flags: 64
+  } catch (err) {
+    console.error("❌ Command error:", err);
+
+    if (!interaction.replied) {
+      interaction.reply({
+        content: "❌ Error executing command",
+        ephemeral: true
       });
     }
   }
@@ -163,4 +168,8 @@ client.on("interactionCreate", async (interaction) => {
 
 // ================= LOGIN =================
 
-client.login(process.env.TOKEN);
+client.login(process.env.TOKEN)
+  .then(() => console.log("🔐 Login success"))
+  .catch(err => {
+    console.error("❌ LOGIN ERROR:", err);
+  });
