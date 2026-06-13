@@ -1,5 +1,9 @@
 const { Client, GatewayIntentBits, REST, Routes, EmbedBuilder } = require("discord.js");
 
+console.log("TOKEN:", process.env.TOKEN);
+console.log("CLIENT_ID:", process.env.CLIENT_ID);
+console.log("GUILD_ID:", process.env.GUILD_ID);
+
 // ===== ENV CHECK =====
 if (!process.env.TOKEN) {
   console.error("❌ TOKEN missing in ENV");
