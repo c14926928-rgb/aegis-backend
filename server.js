@@ -14,6 +14,13 @@ let actions = {};
 let logs = {};
 let heartbeats = {};
 
+// ================== KEEP ALIVE ==================
+
+// 🔥 evita que Render se duerma
+setInterval(() => {
+  console.log("🟢 KEEP ALIVE");
+}, 30000);
+
 // ================== HEALTH ==================
 
 app.get("/", (req, res) => {
@@ -71,23 +78,21 @@ app.post("/action", (req, res) => {
 });
 
 app.get("/action", (req, res) => {
-  try {
-    const { serverId } = req.query;
+  const { serverId } = req.query;
 
-    if (!serverId || !actions[serverId]) {
-      return res.json({ action: "none" });
-    }
-
-    const action = actions[serverId];
-
-    delete actions[serverId];
-
-    res.json({ action });
-
-  } catch (err) {
-    console.error("❌ ACTION ERROR:", err);
-    res.status(500).json({ action: "none" });
+  if (!serverId) {
+    return res.json({ action: "none" });
   }
+
+  const action = actions[serverId];
+
+  if (!action) {
+    return res.json({ action: "none" });
+  }
+
+  delete actions[serverId];
+
+  res.json({ action });
 });
 
 // ================== LOG SYSTEM ==================
@@ -121,10 +126,9 @@ app.get("/logs", (req, res) => {
   res.json(logs[serverId]);
 });
 
-// ================== FRAME (ANTI CRASH) ==================
+// ================== FRAME ==================
 
 app.post("/frame", (req, res) => {
-  // opcional: ignorar frames para estabilidad
   res.sendStatus(200);
 });
 
