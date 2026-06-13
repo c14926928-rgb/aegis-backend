@@ -6,20 +6,13 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-console.log("🚀 Aegis Backend Started");
+console.log("🚀 Aegis Backend v2 Started");
 
 // ================== STORAGE ==================
 
+let heartbeats = {};
 let actions = {};
 let logs = {};
-let heartbeats = {};
-
-// ================== KEEP ALIVE ==================
-
-// 🔥 evita que Render se duerma
-setInterval(() => {
-  console.log("🟢 KEEP ALIVE");
-}, 30000);
 
 // ================== HEALTH ==================
 
@@ -40,6 +33,8 @@ app.post("/heartbeat", (req, res) => {
 
   heartbeats[serverId] = Date.now();
 
+  console.log("💓 HEARTBEAT:", serverId);
+
   res.sendStatus(200);
 });
 
@@ -53,7 +48,8 @@ app.get("/status", (req, res) => {
   const diff = Date.now() - heartbeats[serverId];
 
   res.json({
-    status: diff < 10000 ? "online" : "offline"
+    status: diff < 10000 ? "online" : "offline",
+    lastSeen: heartbeats[serverId]
   });
 });
 
@@ -67,9 +63,9 @@ app.post("/action", (req, res) => {
   }
 
   actions[serverId] = {
+    id: Date.now(),
     type,
-    player,
-    time: Date.now()
+    player
   };
 
   console.log("🎯 ACTION SET:", actions[serverId]);
@@ -78,21 +74,23 @@ app.post("/action", (req, res) => {
 });
 
 app.get("/action", (req, res) => {
-  const { serverId } = req.query;
+  try {
+    const { serverId } = req.query;
 
-  if (!serverId) {
-    return res.json({ action: "none" });
+    if (!serverId || !actions[serverId]) {
+      return res.json({ action: "none" });
+    }
+
+    const action = actions[serverId];
+
+    delete actions[serverId];
+
+    res.json({ action });
+
+  } catch (err) {
+    console.error("❌ ACTION ERROR:", err);
+    res.json({ action: "none" });
   }
-
-  const action = actions[serverId];
-
-  if (!action) {
-    return res.json({ action: "none" });
-  }
-
-  delete actions[serverId];
-
-  res.json({ action });
 });
 
 // ================== LOG SYSTEM ==================
@@ -126,7 +124,7 @@ app.get("/logs", (req, res) => {
   res.json(logs[serverId]);
 });
 
-// ================== FRAME ==================
+// ================== FRAME (ANTI CRASH) ==================
 
 app.post("/frame", (req, res) => {
   res.sendStatus(200);
@@ -137,5 +135,5 @@ app.post("/frame", (req, res) => {
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log("🔥 Running on port", PORT);
+  console.log(`🔥 Running on port ${PORT}`);
 });
