@@ -1,4 +1,5 @@
 const { Client, GatewayIntentBits } = require("discord.js");
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
 // ===== DEBUG =====
 console.log("TOKEN:", process.env.TOKEN);
@@ -10,6 +11,8 @@ const client = new Client({
 // ===== READY =====
 client.once("ready", () => {
   console.log(`🤖 Bot ONLINE as ${client.user.tag}`);
+
+   await registerCommands();
 });
 
 // ===== SIMPLE COMMAND =====
@@ -162,7 +165,8 @@ const commands = [
   console.log("✅ Commands registered");
 }
 
-registerCommands();
+process.on("unhandledRejection", err => console.error(err));
+process.on("uncaughtException", err => console.error(err));
 
 // ===== LOGIN =====
 client.login(process.env.TOKEN)
