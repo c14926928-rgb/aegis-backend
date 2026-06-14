@@ -15,7 +15,7 @@ setInterval(async () => {
   } catch (err) {
     console.log("🔴 KEEP ALIVE ERROR");
   }
-}, 240000); // cada 4 minutos
+}, 150000); 
 
 // ================== STORAGE ==================
 
