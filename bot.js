@@ -1,8 +1,7 @@
-const { Client, GatewayIntentBits } = require("discord.js");
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+const { Client, GatewayIntentBits, REST, Routes } = require("discord.js");
 
-// ===== DEBUG =====
-console.log("TOKEN:", process.env.TOKEN);
+// ✅ FIX FETCH
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds]
@@ -11,20 +10,20 @@ const client = new Client({
 // ===== READY =====
 client.once("ready", () => {
   console.log(`🤖 Bot ONLINE as ${client.user.tag}`);
-
-   await registerCommands();
 });
 
-// ===== SIMPLE COMMAND =====
+// ===== COMMANDS =====
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
-  // ===== PING =====
+  const serverId = interaction.guild.id;
+
+  // PING
   if (interaction.commandName === "ping") {
     return interaction.reply("🏓 Pong!");
   }
 
-  // ===== BAN =====
+  // BAN
   if (interaction.commandName === "ban") {
     const player = interaction.options.getString("player");
 
@@ -34,19 +33,16 @@ client.on("interactionCreate", async (interaction) => {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        serverId: interaction.guild.id,
+        serverId,
         type: "BAN",
         player
       })
     });
 
-    return interaction.reply({
-      content: `🔨 Ban sent: ${player}`,
-      ephemeral: true
-    });
+    return interaction.reply({ content: `🔨 Ban sent: ${player}`, ephemeral: true });
   }
 
-  // ===== KICK =====
+  // KICK
   if (interaction.commandName === "kick") {
     const player = interaction.options.getString("player");
 
@@ -56,19 +52,16 @@ client.on("interactionCreate", async (interaction) => {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        serverId: interaction.guild.id,
+        serverId,
         type: "KICK",
         player
       })
     });
 
-    return interaction.reply({
-      content: `👢 Kick sent: ${player}`,
-      ephemeral: true
-    });
+    return interaction.reply({ content: `👢 Kick sent: ${player}`, ephemeral: true });
   }
 
-  // ===== ALERT =====
+  // ALERT
   if (interaction.commandName === "alert") {
     const message = interaction.options.getString("message");
 
@@ -78,79 +71,45 @@ client.on("interactionCreate", async (interaction) => {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        serverId: interaction.guild.id,
+        serverId,
         message: `[ALERT] ${message}`
       })
     });
 
-    return interaction.reply({
-      content: `🚨 Alert sent`,
-      ephemeral: true
-    });
+    return interaction.reply({ content: `🚨 Alert sent`, ephemeral: true });
   }
-
 });
 
-// ===== REGISTER COMMAND =====
-const { REST, Routes } = require("discord.js");
-
+// ===== REGISTER COMMANDS =====
 async function registerCommands() {
-const commands = [
-  { name: "ping", description: "Test bot" },
-  { name: "panel", description: "Open dashboard" },
 
-  {
-    name: "link",
-    description: "Link server",
-    options: [
-      {
-        name: "ip",
-        type: 3,
-        required: true,
-        description: "Server IP"
-      }
-    ]
-  },
+  const commands = [
+    { name: "ping", description: "Test bot" },
 
-  {
-    name: "ban",
-    description: "Ban player",
-    options: [
-      {
-        name: "player",
-        type: 3,
-        required: true,
-        description: "Player name"
-      }
-    ]
-  },
+    {
+      name: "ban",
+      description: "Ban player",
+      options: [
+        { name: "player", type: 3, required: true, description: "Player name" }
+      ]
+    },
 
-  {
-    name: "kick",
-    description: "Kick player",
-    options: [
-      {
-        name: "player",
-        type: 3,
-        required: true,
-        description: "Player name"
-      }
-    ]
-  },
+    {
+      name: "kick",
+      description: "Kick player",
+      options: [
+        { name: "player", type: 3, required: true, description: "Player name" }
+      ]
+    },
 
-  {
-    name: "alert",
-    description: "Send alert",
-    options: [
-      {
-        name: "message",
-        type: 3,
-        required: true,
-        description: "Alert message"
-      }
-    ]
-  }
-];
+    {
+      name: "alert",
+      description: "Send alert",
+      options: [
+        { name: "message", type: 3, required: true, description: "Alert message" }
+      ]
+    }
+  ];
 
   const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
 
@@ -165,10 +124,10 @@ const commands = [
   console.log("✅ Commands registered");
 }
 
-process.on("unhandledRejection", err => console.error(err));
-process.on("uncaughtException", err => console.error(err));
+// ✅ FIX (NO await directo)
+registerCommands().catch(console.error);
 
 // ===== LOGIN =====
 client.login(process.env.TOKEN)
-  .then(() => console.log("🔐 Conclave AegisAC-Bot Running "))
+  .then(() => console.log("🔐 Conclave AegisAC Running (Bot)"))
   .catch(err => console.error("❌ LOGIN ERROR:", err));
