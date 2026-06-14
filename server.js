@@ -8,6 +8,15 @@ app.use(express.json());
 
 console.log("🚀 Aegis Backend PRO Started");
 
+setInterval(async () => {
+  try {
+    await fetch("https://aegis-backend-gwu4.onrender.com/health");
+    console.log("🟢 KEEP ALIVE PING");
+  } catch (err) {
+    console.log("🔴 KEEP ALIVE ERROR");
+  }
+}, 240000); // cada 4 minutos
+
 // ================== STORAGE ==================
 
 let heartbeats = {};
