@@ -1,3 +1,7 @@
+console.log("TOKEN:", process.env.TOKEN ? "OK" : "MISSING");
+console.log("CLIENT_ID:", process.env.CLIENT_ID);
+console.log("GUILD_ID:", process.env.GUILD_ID);
+
 const { Client, GatewayIntentBits, REST, Routes } = require("discord.js");
 
 // ✅ FIX FETCH
