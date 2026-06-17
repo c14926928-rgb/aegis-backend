@@ -4,7 +4,7 @@ const cors = require("cors");
 const app = express();
 
 app.use(cors());
-app.use(express.json());
+app.use(express.raw({ type: 'image/jpeg', limit: '1mb' }));
 
 console.log("🚀 Aegis Backend PRO Started");
 
@@ -256,8 +256,45 @@ app.get("/movement", (req, res) => {
 
 // ================== FRAME ==================
 
-app.post("/frame", (req, res) => {
-  res.sendStatus(200);
+// 🔥 almacenamiento en memoria
+const frames = {};
+
+// 📤 RECIBE FRAME
+app.post('/frame', (req, res) => {
+
+    const player = req.headers['player'];
+
+    if (!player) return res.sendStatus(400);
+
+    frames[player] = {
+        data: req.body,
+        time: Date.now()
+    };
+
+    res.sendStatus(200);
+});
+
+// 📥 FRAME INDIVIDUAL (MOD)
+app.get('/api/frame/:player', (req, res) => {
+
+    const f = frames[req.params.player];
+
+    if (!f) return res.sendStatus(404);
+
+    res.set('Content-Type', 'image/jpeg');
+    res.send(f.data);
+});
+
+// 📥 TODOS LOS FRAMES (WEB)
+app.get('/api/frames', (req, res) => {
+
+    const result = {};
+
+    for (const p in frames) {
+        result[p] = `/api/frame/${p}`;
+    }
+
+    res.json(result);
 });
 
 // ================== START ==================
