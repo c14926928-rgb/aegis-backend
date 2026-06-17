@@ -133,5 +133,9 @@ registerCommands().catch(console.error);
 
 // ===== LOGIN =====
 client.login(process.env.TOKEN)
-  .then(() => console.log("🔐 Conclave AegisAC Running (Bot)"))
-  .catch(err => console.error("❌ LOGIN ERROR:", err));
+  .then(() => {
+    console.log("🔐 LOGIN SUCCESS");
+  })
+  .catch(err => {
+    console.error("❌ LOGIN ERROR:", err);
+  });

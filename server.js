@@ -10,9 +10,9 @@ console.log("🚀 Aegis Backend PRO Started");
 
 setInterval(async () => {
   try {
-    await fetch("https://aegis-backend-gwu4.onrender.com/health");
-    console.log("🟢 KEEP ALIVE PING");
-  } catch (err) {
+    const res = await fetch("https://aegis-backend-gwu4.onrender.com");
+    console.log("🟢 KEEP ALIVE OK");
+  } catch (e) {
     console.log("🔴 KEEP ALIVE ERROR");
   }
 }, 150000); 
