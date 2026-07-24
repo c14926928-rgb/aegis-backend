@@ -23,14 +23,7 @@ app.get("/", (req, res) => {
 
 // ===== KEEP ALIVE =====
 
-setInterval(async () => {
-  try {
-    await fetch("https://aegis-backend-gwu4.onrender.com/");
-    console.log("🟢 KEEP ALIVE");
-  } catch {
-    console.log("🔴 KEEP ALIVE ERROR");
-  }
-}, 40000);
+//OFFLINE
 
 // ===== START SERVER =====
 const PORT = process.env.PORT || 10000;
