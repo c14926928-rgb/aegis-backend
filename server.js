@@ -18,16 +18,6 @@ console.log("🚀 Aegis Backend Started");
 require("./bot");
 const { client } = require("./bot");
 
-// ===== ROUTE TEST =====
-
-app.get("/", (req, res) => {
-  res.send("Aegis Backend Online");
-});
-
-// ===== KEEP ALIVE =====
-
-//OFFLINE
-
 // ===== START SERVER =====
 const PORT = process.env.PORT || 10000;
 
@@ -66,33 +56,141 @@ app.post("/frame", (req, res) => {
   res.send("ok");
 });
 
-//ALERTS 
+// ===== AEGIS LOGS =====
 
-app.post("/alert", async (req, res) => {
+app.post("/logs", async (req, res) => {
 
     try {
 
         const {
+            type,
             player,
             check,
             vl,
-            action,
-            debug
+            debug,
+            server
         } = req.body;
 
         const channel = await client.channels.fetch(process.env.ALERT_CHANNEL);
 
+        if (!channel) {
+            return res.status(404).json({
+                error: "Discord channel not found"
+            });
+        }
+
         const embed = new EmbedBuilder()
-            .setTitle("🛡️ Aegis Alert")
-            .setColor(0xffaa00)
-            .addFields(
-                { name: "Player", value: player, inline: true },
-                { name: "Check", value: check, inline: true },
-                { name: "VL", value: String(vl), inline: true },
-                { name: "Action", value: action },
-                { name: "Debug", value: debug ?? "None" }
-            )
-            .setTimestamp();
+            .setTimestamp()
+            .setFooter({
+                text: "Conclave AegisAC"
+            });
+
+        switch (type) {
+
+            case "WARNING":
+
+                embed
+                    .setColor(0xF1C40F)
+                    .setTitle("⚠️ Cheat Detection")
+                    .addFields(
+                        {
+                            name: "Player",
+                            value: player ?? "Unknown",
+                            inline: true
+                        },
+                        {
+                            name: "Check",
+                            value: check ?? "Unknown",
+                            inline: true
+                        },
+                        {
+                            name: "VL",
+                            value: String(vl ?? 0),
+                            inline: true
+                        },
+                        {
+                            name: "Server",
+                            value: server ?? "Unknown",
+                            inline: true
+                        },
+                        {
+                            name: "Debug",
+                            value: "```" + (debug ?? "None") + "```"
+                        }
+                    );
+
+                break;
+
+            case "KICK":
+
+                embed
+                    .setColor(0xE67E22)
+                    .setTitle("👢 Player Kicked")
+                    .setDescription("**" + player + "** was kicked by Aegis.")
+                    .addFields(
+                        {
+                            name: "Check",
+                            value: check ?? "Unknown",
+                            inline: true
+                        },
+                        {
+                            name: "VL",
+                            value: String(vl ?? 0),
+                            inline: true
+                        }
+                    );
+
+                break;
+
+            case "BAN":
+
+                embed
+                    .setColor(0xE74C3C)
+                    .setTitle("🔨 Player Banned")
+                    .setDescription("**" + player + "** was banned by Aegis.")
+                    .addFields(
+                        {
+                            name: "Check",
+                            value: check ?? "Unknown",
+                            inline: true
+                        },
+                        {
+                            name: "VL",
+                            value: String(vl ?? 0),
+                            inline: true
+                        }
+                    );
+
+                break;
+
+            case "JOIN":
+
+                embed
+                    .setColor(0x2ECC71)
+                    .setTitle("🟢 Player Joined")
+                    .setDescription("**" + player + "** joined the server.");
+
+                break;
+
+            case "LEAVE":
+
+                embed
+                    .setColor(0x95A5A6)
+                    .setTitle("🔴 Player Left")
+                    .setDescription("**" + player + "** left the server.");
+
+                break;
+
+            default:
+
+                embed
+                    .setColor(0x3498DB)
+                    .setTitle("📨 Aegis")
+                    .setDescription("Unknown event received.");
+
+                break;
+
+        }
 
         await channel.send({
             embeds: [embed]
@@ -102,7 +200,7 @@ app.post("/alert", async (req, res) => {
 
     } catch (err) {
 
-        console.error(err);
+        console.error("Discord Logs:", err);
 
         res.sendStatus(500);
 
