@@ -1,18 +1,16 @@
 require("dotenv").config();
-console.log("ALERT_CHANNEL:", process.env.ALERT_CHANNEL);
-
-client.login(process.env.TOKEN);
 
 const { Client, GatewayIntentBits, REST, Routes } = require("discord.js");
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds]
+    intents: [
+        GatewayIntentBits.Guilds
+    ]
 });
 
-// ===== READY =====
-client.once("ready", async () => {
-  console.log(`🤖 ONLINE: ${client.user.tag}`);
-  await registerCommands();
+client.once("clientReady", async () => {
+    console.log(`🤖 ONLINE: ${client.user.tag}`);
+    await registerCommands();
 });
 
 // ===== COMMAND HANDLER =====
@@ -56,8 +54,9 @@ async function registerCommands() {
 
 // ===== LOGIN =====
 client.login(process.env.TOKEN)
-  .then(() => console.log("🔐 LOGIN OK"))
-  .catch(err => console.error("❌ LOGIN ERROR:", err));
-  module.exports = {
+    .then(() => console.log("🔐 LOGIN OK"))
+    .catch(err => console.error("❌ LOGIN ERROR:", err));
+
+module.exports = {
     client
 };
