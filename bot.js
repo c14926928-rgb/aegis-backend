@@ -1,3 +1,8 @@
+require("dotenv").config();
+console.log("ALERT_CHANNEL:", process.env.ALERT_CHANNEL);
+
+client.login(process.env.TOKEN);
+
 const { Client, GatewayIntentBits, REST, Routes } = require("discord.js");
 
 const client = new Client({
@@ -53,3 +58,6 @@ async function registerCommands() {
 client.login(process.env.TOKEN)
   .then(() => console.log("🔐 LOGIN OK"))
   .catch(err => console.error("❌ LOGIN ERROR:", err));
+  module.exports = {
+    client
+};
