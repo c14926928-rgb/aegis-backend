@@ -45,6 +45,18 @@ router.post("/heartbeat", (req, res) => {
 
 });
 
+router.post("/reset", (req, res) => {
+
+    const { license } = req.body;
+
+    const success = licenseService.resetLicense(license);
+
+    res.json({
+        success
+    });
+
+});
+
 
 
 module.exports = router;

@@ -153,16 +153,36 @@ function expireLicense(key) {
 
 }
 
+function resetLicense(key) {
+
+    const license = licenses.getByKey(key);
+
+    if (!license) {
+        return false;
+    }
+
+    licenses.update(key, {
+
+        serverUUID: null,
+        firstActivation: null,
+        lastHeartbeat: null
+
+    });
+
+    console.log("======================================");
+    console.log("[LICENSE RESET]");
+    console.log("License :", key);
+    console.log("======================================");
+
+    return true;
+
+}
+
 module.exports = {
-
     verifyLicense,
-
     activateLicense,
-
     heartbeat,
-
     revokeLicense,
-
-    expireLicense
-
+    resetLicense
 };
+
