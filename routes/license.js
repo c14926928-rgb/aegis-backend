@@ -27,9 +27,10 @@ router.post("/activate", (req, res) => {
             serverUUID
         );
 
-    res.json({
-        success
-    });
+   res.json({
+    valid: success,
+    status: success ? "ACTIVE" : "INVALID_SERVER"
+});
 
 });
 
