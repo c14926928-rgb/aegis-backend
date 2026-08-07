@@ -2,9 +2,9 @@
     {
         "license": "CP-AEGIS-TEST",
         "status": "ACTIVE",
-        "serverUUID": null,
-        "serverName": null,
-        "version": null,
+        "serverUUID": "6c7fb887-1e7b-45fe-abf0-27cd6e9a0244",
+        "serverName": "Conclave Survival",
+        "version": "1.0.0",
         "expiresAt": null,
         "lastHeartbeat": null
     }
