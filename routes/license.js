@@ -4,37 +4,42 @@ const express = require("express");
 const router = express.Router();
 
 const licenseService = require("../services/license");
+
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
 
+/*
+ * VERIFY
+ * - Verifica la licencia.
+ * - Si nunca fue activada, registra el UUID.
+ * - Si ya pertenece al mismo UUID, permite.
+ * - Si pertenece a otro UUID, rechaza.
+ */
 router.post("/verify", (req, res) => {
 
     console.log("📥 POST /license/verify");
     console.log(req.body);
 
-    const { license } = req.body;
+    const {
+        license,
+        serverUUID,
+        serverName,
+        version
+    } = req.body;
 
-    const response = licenseService.verifyLicense(license);
+    const response = licenseService.verifyLicense(
+        license,
+        serverUUID,
+        serverName,
+        version
+    );
 
     res.json(response);
-});
-
-router.post("/activate", (req, res) => {
-
-    const { license, serverUUID } = req.body;
-
-    const success =
-        licenseService.activateLicense(
-            license,
-            serverUUID
-        );
-
-   res.json({
-    valid: success,
-    status: success ? "ACTIVE" : "INVALID_SERVER"
-});
 
 });
 
+/*
+ * HEARTBEAT
+ */
 router.post("/heartbeat", (req, res) => {
 
     const { license } = req.body;
@@ -47,6 +52,9 @@ router.post("/heartbeat", (req, res) => {
 
 });
 
+/*
+ * RESET
+ */
 router.post("/reset", (req, res) => {
 
     const auth = req.headers.authorization;
@@ -69,6 +77,5 @@ router.post("/reset", (req, res) => {
     });
 
 });
-
 
 module.exports = router;
