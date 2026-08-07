@@ -1,3 +1,5 @@
+console.log("📄 license.js loaded");
+
 const express = require("express");
 const router = express.Router();
 
@@ -5,13 +7,14 @@ const licenseService = require("../services/license");
 
 router.post("/verify", (req, res) => {
 
+    console.log("📥 POST /license/verify");
+    console.log(req.body);
+
     const { license } = req.body;
 
-    const response =
-        licenseService.verifyLicense(license);
+    const response = licenseService.verifyLicense(license);
 
     res.json(response);
-
 });
 
 router.post("/activate", (req, res) => {
@@ -41,5 +44,7 @@ router.post("/heartbeat", (req, res) => {
     });
 
 });
+
+
 
 module.exports = router;
