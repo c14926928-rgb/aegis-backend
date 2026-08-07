@@ -93,6 +93,69 @@ app.post("/logs", async (req, res) => {
 
         switch (type) {
 
+            case "OPERATOR":
+
+    if (data.current > data.previous) {
+
+        embed
+            .setColor(0xFEE75C)
+            .setTitle("🔑 Operator Granted")
+            .addFields(
+                {
+                    name: "Player",
+                    value: data.player
+                },
+                {
+                    name: "New Level",
+                    value: String(data.current)
+                }
+            );
+
+    } else {
+
+        embed
+            .setColor(0x95A5A6)
+            .setTitle("🔒 Operator Removed")
+            .addFields(
+                {
+                    name: "Player",
+                    value: data.player
+                }
+            );
+
+    }
+
+    break;
+
+           case "ADVANCEMENT":
+
+    embed
+        .setColor(0xFEE75C)
+        .setTitle("🏆 Advancement")
+        .addFields(
+            {
+                name: "Player",
+                value: data.player,
+                inline: true
+            },
+            {
+                name: "Advancement",
+                value: data.advancement,
+                inline: true
+            }
+        );
+
+    break;
+
+            case "RESPAWN":
+
+    embed
+        .setColor(0x57F287)
+        .setTitle("♻ Player Respawned")
+        .setDescription(`**${data.player}** respawned.`);
+
+    break;
+
             case "GAMEMODE":
 
     embed
