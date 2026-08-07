@@ -75,7 +75,52 @@ function activateLicense(key, serverUUID) {
     }
 
     return license.serverUUID === serverUUID;
+    
+function activateLicense(key, serverUUID) {
 
+    const license = licenses.getByKey(key);
+
+    if (!license) {
+        return false;
+    }
+
+    if (license.status !== "ACTIVE") {
+        return false;
+    }
+
+    // Primera activación
+    if (!license.serverUUID || license.serverUUID === "") {
+
+        licenses.update(key, {
+            serverUUID: serverUUID,
+            firstActivation: new Date().toISOString()
+        });
+
+        console.log("[LICENSE] First activation");
+        console.log("License :", key);
+        console.log("Server  :", serverUUID);
+
+        return true;
+    }
+
+    // Ya pertenece a este servidor
+    if (license.serverUUID === serverUUID) {
+
+        console.log("[LICENSE] Returning server");
+
+        return true;
+    }
+
+    // Intento de usar la licencia en otro servidor
+    console.warn("======================================");
+    console.warn("UNAUTHORIZED LICENSE ACTIVATION");
+    console.warn("License :", key);
+    console.warn("Expected:", license.serverUUID);
+    console.warn("Received:", serverUUID);
+    console.warn("======================================");
+
+    return false;
+}
 }
 
 function heartbeat(key) {
