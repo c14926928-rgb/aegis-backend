@@ -12,6 +12,15 @@ const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch
 
 app.use(express.json());
 
+const logRoutes = require("./routes/logs");
+const licenseRoutes = require("./routes/license");
+const adminRoutes = require("./routes/admin");
+
+app.use("/license", licenseRoutes);
+console.log("✅ License routes mounted");
+
+app.use("/admin", adminRoutes);
+
 console.log("🚀 Aegis Backend Started");
 
 // 🔥 IMPORTANTE → ARRANCA EL BOT
@@ -24,8 +33,6 @@ const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log("🔥 Running on port " + PORT);
 });
-
-// ===== KEEP ALIVE =====
 
 // ===== KEEP ALIVE =====
 
