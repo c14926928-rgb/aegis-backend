@@ -4,6 +4,7 @@ const express = require("express");
 const router = express.Router();
 
 const licenseService = require("../services/license");
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
 
 router.post("/verify", (req, res) => {
 
@@ -48,6 +49,17 @@ router.post("/heartbeat", (req, res) => {
 
 router.post("/reset", (req, res) => {
 
+    const auth = req.headers.authorization;
+
+    if (auth !== `Bearer ${ADMIN_TOKEN}`) {
+
+        return res.status(401).json({
+            success: false,
+            message: "Unauthorized"
+        });
+
+    }
+
     const { license } = req.body;
 
     const success = licenseService.resetLicense(license);
@@ -57,7 +69,6 @@ router.post("/reset", (req, res) => {
     });
 
 });
-
 
 
 module.exports = router;
