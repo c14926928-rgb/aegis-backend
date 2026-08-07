@@ -27,6 +27,17 @@ app.listen(PORT, () => {
 
 // ===== KEEP ALIVE =====
 
+// ===== KEEP ALIVE =====
+
+setInterval(async () => {
+  try {
+    await fetch("https://aegis-backend-gwu4.onrender.com/");
+    console.log("🟢 🛡️ Aegis Backend Running");
+  } catch {
+    console.log("🔴 KEEP ALIVE ERROR");
+  }
+}, 40000);
+
 app.get("/", (req, res) => {
     res.status(200).send("🛡️ Aegis Backend Online");
 });
@@ -62,14 +73,9 @@ app.post("/logs", async (req, res) => {
 
     try {
 
-        const {
-            type,
-            player,
-            check,
-            vl,
-            debug,
-            server
-        } = req.body;
+     const data = req.body;
+
+     const type = data.type;
 
         const channel = await client.channels.fetch(process.env.ALERT_CHANNEL);
 
@@ -87,108 +93,89 @@ app.post("/logs", async (req, res) => {
 
         switch (type) {
 
-            case "WARNING":
+            case "GAMEMODE":
 
-                embed
-                    .setColor(0xF1C40F)
-                    .setTitle("⚠️ Cheat Detection")
-                    .addFields(
-                        {
-                            name: "Player",
-                            value: player ?? "Unknown",
-                            inline: true
-                        },
-                        {
-                            name: "Check",
-                            value: check ?? "Unknown",
-                            inline: true
-                        },
-                        {
-                            name: "VL",
-                            value: String(vl ?? 0),
-                            inline: true
-                        },
-                        {
-                            name: "Server",
-                            value: server ?? "Unknown",
-                            inline: true
-                        },
-                        {
-                            name: "Debug",
-                            value: "```" + (debug ?? "None") + "```"
-                        }
-                    );
+    embed
+        .setColor(0x5865F2)
+        .setTitle("🎮 GameMode Changed")
+        .addFields(
+            { name: "Player", value: data.player, inline: true },
+            { name: "Mode", value: data.mode, inline: true },
+            { name: "Operator", value: "OP " + data.operator, inline: true }
+        );
 
-                break;
+    break;
 
-            case "KICK":
+            case "DEATH":
 
-                embed
-                    .setColor(0xE67E22)
-                    .setTitle("👢 Player Kicked")
-                    .setDescription("**" + player + "** was kicked by Aegis.")
-                    .addFields(
-                        {
-                            name: "Check",
-                            value: check ?? "Unknown",
-                            inline: true
-                        },
-                        {
-                            name: "VL",
-                            value: String(vl ?? 0),
-                            inline: true
-                        }
-                    );
+    embed
+        .setColor(0x992D22)
+        .setTitle("☠ Player Died")
+        .addFields(
+            { name: "Player", value: data.player },
+            { name: "Reason", value: data.reason }
+        );
 
-                break;
-
-            case "BAN":
-
-                embed
-                    .setColor(0xE74C3C)
-                    .setTitle("🔨 Player Banned")
-                    .setDescription("**" + player + "** was banned by Aegis.")
-                    .addFields(
-                        {
-                            name: "Check",
-                            value: check ?? "Unknown",
-                            inline: true
-                        },
-                        {
-                            name: "VL",
-                            value: String(vl ?? 0),
-                            inline: true
-                        }
-                    );
-
-                break;
-
-            case "JOIN":
-
-                embed
-                    .setColor(0x2ECC71)
-                    .setTitle("🟢 Player Joined")
-                    .setDescription("**" + player + "** joined the server.");
-
-                break;
+    break;
 
             case "LEAVE":
 
-                embed
-                    .setColor(0x95A5A6)
-                    .setTitle("🔴 Player Left")
-                    .setDescription("**" + player + "** left the server.");
+    embed
+        .setColor(0x95A5A6)
+        .setTitle("🔴 Player Left")
+        .setDescription(`**${data.player}** left the server.`);
 
-                break;
+    break;
 
-            default:
+            case "JOIN":
 
-                embed
-                    .setColor(0x3498DB)
-                    .setTitle("📨 Aegis")
-                    .setDescription("Unknown event received.");
+    embed
+        .setColor(0x57F287)
+        .setTitle("🟢 Player Joined")
+        .setDescription(`**${data.player}** joined the server.`);
 
-                break;
+    break;
+
+            case "BAN":
+
+    embed
+        .setColor(0xE74C3C)
+        .setTitle("🔨 Player Banned")
+        .addFields(
+            { name: "Player", value: data.player },
+            { name: "Reason", value: data.reason }
+        );
+
+    break;
+
+case "KICK":
+
+    embed
+        .setColor(0xE67E22)
+        .setTitle("👢 Player Kicked")
+        .addFields(
+            { name: "Player", value: data.player },
+            { name: "Reason", value: data.reason }
+        );
+
+    break;
+
+            case "WARNING":
+
+    embed
+        .setColor(0xF1C40F)
+        .setTitle("⚠ Cheat Detection")
+        .addFields(
+            { name: "Player", value: data.player, inline: true },
+            { name: "Check", value: data.check, inline: true },
+            { name: "VL", value: String(data.vl), inline: true },
+           {
+    name: "Debug",
+    value: "```" + (data.debug ?? "None") + "```"
+}
+        );
+
+    break;
 
         }
 
@@ -205,5 +192,7 @@ app.post("/logs", async (req, res) => {
         res.sendStatus(500);
 
     }
+    
 
 });
+
